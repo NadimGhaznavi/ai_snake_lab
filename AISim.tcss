@@ -1,0 +1,115 @@
+Button {
+    align: center middle;
+    border: round #0c323e;
+    width: 10;
+    background: black; 
+}
+    
+#game_board {
+    height: 22;
+    border: round #0c323e;
+    width: 42;
+    align: center middle;
+    background: black;
+}
+
+#game_box {
+    height: 24;
+    width: 46;
+    border-title-color: #5fc442;
+    border-subtitle-color: #5fc442;
+    border: round #0c323e;
+    background: black;
+    align: center middle;
+    padding: 0 1; 
+}
+
+#runtime_box {
+    height: 24;
+    border-title-color: #5fc442;
+    border-title-style: bold;
+    border: round #0c323e;
+    padding: 0 1;
+    background: black;
+}
+
+#score {
+    height: 3;
+    border: round #0c323e;
+    width: 42;
+    padding: 0 1;
+    color: #5fc442;
+    background: black;
+}
+
+#settings_box {
+    height: 6;
+    border-title-color: #5fc442;
+    border-title-style: bold;
+    border: round #0c323e;
+    padding: 0 1;
+    background: black;
+}
+
+#title {
+    height: 3;
+    padding: 0 1;
+    border: round #0c323e;
+    color: #3e99af;
+    width: 100%;
+    background: black;
+    text-style: bold;
+    align: center middle; }
+
+#button_pause {
+    color: #c44242;
+    text-style: bold; 
+}
+
+#button_reset {
+    color: #c49b42;
+    text-style: bold; 
+}
+
+#button_start {
+    color: #5fc442;
+    text-style: bold; 
+}
+
+#button_quit {
+    color: #c44242;
+    text-style: bold; 
+}
+
+#button_update {
+    color: #3e99af;
+    text-style: bold; 
+}
+
+.input_10 {
+    width: 10;
+}
+
+.label {
+    color: #afa73eff;
+}
+
+.running #button_start {
+    display: none;
+}
+
+.label_settings {
+    color: #5fc442;
+}
+
+.stopped #button_pause {
+    display: none;
+}
+
+.stopped #button_update {
+    display: none;
+}
+.variable {
+    color: #afa73eff
+}
+

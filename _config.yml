@@ -1,0 +1,8 @@
+title: AI Snake Game Lab
+description: Reinforcement Learning Sandbox
+
+remote_theme: nadimghaznavi/minimax
+
+plugins:
+  - jekyll-remote-theme
+
