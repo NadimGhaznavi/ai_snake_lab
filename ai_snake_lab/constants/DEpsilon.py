@@ -1,5 +1,5 @@
 """
-Constants/DEpsilon.py
+constants/DEpsilon.py
 
     AI Snake Game Simulator
     Author: Nadim-Daniel Ghaznavi
@@ -8,7 +8,7 @@ Constants/DEpsilon.py
     License: GPL 3.0
 """
 
-from Modules.ConstGroup import ConstGroup
+from utils.ConstGroup import ConstGroup
 
 
 class DEpsilon(ConstGroup):

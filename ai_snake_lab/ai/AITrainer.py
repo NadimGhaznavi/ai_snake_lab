@@ -1,5 +1,5 @@
 """
-Modules/AITrainer.py
+ai/AITrainer.py
 
     AI Snake Game Simulator
     Author: Nadim-Daniel Ghaznavi
@@ -15,11 +15,11 @@ import numpy as np
 import time
 import sys
 
-from Modules.ModelL import ModelL
-from Modules.ModelRNN import ModelRNN
+from ai.models.ModelL import ModelL
+from ai.models.ModelRNN import ModelRNN
 
-from Constants.DModelL import DModelL
-from Constants.DModelLRNN import DModelRNN
+from constants.DModelL import DModelL
+from constants.DModelLRNN import DModelRNN
 
 
 class AITrainer:

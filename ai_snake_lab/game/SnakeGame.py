@@ -1,5 +1,5 @@
 """
-Modules/SnakeGame.py
+game/SnakeGame.py
 
     AI Snake Game Simulator
     Author: Nadim-Daniel Ghaznavi
@@ -14,8 +14,8 @@ import numpy as np
 
 from textual.geometry import Offset
 
-from Widgets.GameBoard import GameBoard
-from Modules.GameElements import Direction
+from game.GameBoard import GameBoard
+from game.GameElements import Direction
 
 # Maximum number of moves. This is multiplied by the length of the snake. The game
 # ends if game moves > MAX_MOVES * length-of-snake. This avoids enless AI looping behavior.

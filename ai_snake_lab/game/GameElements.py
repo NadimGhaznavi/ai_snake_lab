@@ -1,5 +1,5 @@
 """
-Modules/GameElements.py
+game/GameElements.py
 
     AI Snake Game Simulator
     Author: Nadim-Daniel Ghaznavi

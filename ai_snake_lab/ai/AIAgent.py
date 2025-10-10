@@ -1,5 +1,5 @@
 """
-Modules/Agent.py
+ai/Agent.py
 
     AI Snake Game Simulator
     Author: Nadim-Daniel Ghaznavi
@@ -9,14 +9,13 @@ Modules/Agent.py
 """
 
 import torch
-from Modules.ModelL import ModelL
-from Modules.EpsilonAlgo import EpsilonAlgo
-from Modules.ReplayMemory import ReplayMemory
-from Modules.AITrainer import AITrainer
-from Modules.ModelL import ModelL
-from Modules.ModelRNN import ModelRNN
+from ai.EpsilonAlgo import EpsilonAlgo
+from ai.ReplayMemory import ReplayMemory
+from ai.AITrainer import AITrainer
+from ai.models.ModelL import ModelL
+from ai.models.ModelRNN import ModelRNN
 
-from Constants.DReplayMemory import MEM_TYPE
+from constants.DReplayMemory import MEM_TYPE
 
 
 class AIAgent:
@@ -65,20 +64,19 @@ class AIAgent:
         self.trainer.set_optimizer(optimizer)
 
     def train_long_memory(self):
-        # Get the states, actions, rewards, next_states, and dones from the mini_sample
-        memory = self.memory.get_memory()
-        memory_type = self.memory.mem_type()
+        # Train on 5 games
+        max_games = 5
+        # Get a random full game
+        while max_games > 0:
+            max_games -= 1
+            game = self.memory.get_random_game()
+            if not game:
+                return  # no games to train on yet
 
-        if type(self.model) == ModelRNN:
-            for state, action, reward, next_state, done in memory[0]:
-                self.trainer.train_step(state, action, reward, next_state, [done])
-
-        elif memory_type == MEM_TYPE.SHUFFLE:
-            for state, action, reward, next_state, done in memory:
-                self.trainer.train_step(state, action, reward, next_state, [done])
-
-        else:
-            for state, action, reward, next_state, done in memory[0]:
+            for count, (state, action, reward, next_state, done) in enumerate(
+                game, start=1
+            ):
+                # print(f"Move #{count}: {action}")
                 self.trainer.train_step(state, action, reward, next_state, [done])
 
     def train_short_memory(self, state, action, reward, next_state, done):

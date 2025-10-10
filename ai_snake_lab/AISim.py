@@ -10,25 +10,27 @@ AISim.py
 
 import threading
 import time
-import sys
+import sys, os
 
 from textual.app import App, ComposeResult
 from textual.widgets import Label, Input, Button
 from textual.containers import Vertical, Horizontal
 from textual.reactive import var
 
-from Constants.DDef import DDef
-from Constants.DEpsilon import DEpsilon
-from Constants.DFields import DField
-from Constants.DFile import DFile
-from Constants.DLayout import DLayout
-from Constants.DLabels import DLabel
-from Constants.DReplayMemory import MEM_TYPE
+from constants.DDef import DDef
+from constants.DEpsilon import DEpsilon
+from constants.DFields import DField
+from constants.DFile import DFile
+from constants.DLayout import DLayout
+from constants.DLabels import DLabel
+from constants.DReplayMemory import MEM_TYPE
+from constants.DDir import DDir
 
-from Modules.AIAgent import AIAgent
-from Modules.EpsilonAlgo import EpsilonAlgo
-from Widgets.GameBoard import GameBoard
-from Modules.SnakeGame import SnakeGame
+
+from ai.AIAgent import AIAgent
+from ai.EpsilonAlgo import EpsilonAlgo
+from game.GameBoard import GameBoard
+from game.SnakeGame import SnakeGame
 
 RANDOM_SEED = 1970
 
@@ -37,7 +39,7 @@ class AISim(App):
     """A Textual app that has an AI Agent playing the Snake Game."""
 
     TITLE = DDef.APP_TITLE
-    CSS_PATH = DFile.CSS_PATH
+    CSS_PATH = os.path.join(DDir.UTILS, DFile.CSS_FILE)
 
     ## Runtime values
     # Current epsilon value (degrades in real-time)
@@ -181,7 +183,7 @@ class AISim(App):
         self.cur_mem_type_widget.update(
             MEM_TYPE.MEM_TYPE_TABLE[self.agent.memory.mem_type()]
         )
-        self.cur_num_memories_widget.update(str(self.agent.memory.get_num_memories()))
+        self.cur_num_memories_widget.update(str(self.agent.memory.get_num_games()))
         # Initial state is that the app is stopped
         self.add_class(DField.STOPPED)
 
@@ -262,7 +264,7 @@ class AISim(App):
                     self.cur_epsilon_widget.update(str(round(cur_epsilon, 4)))
                 # Update the number of stored memories
                 self.cur_num_memories_widget.update(
-                    str(self.agent.memory.get_num_memories())
+                    str(self.agent.memory.get_num_games())
                 )
 
     def start_thread(self):

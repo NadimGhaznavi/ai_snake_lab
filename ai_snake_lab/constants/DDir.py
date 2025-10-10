@@ -1,5 +1,5 @@
 """
-Constants/DFile.py
+constants/DDir.py
 
     AI Snake Game Simulator
     Author: Nadim-Daniel Ghaznavi
@@ -8,10 +8,11 @@ Constants/DFile.py
     License: GPL 3.0
 """
 
-from Modules.ConstGroup import ConstGroup
+from utils.ConstGroup import ConstGroup
 
 
-class DFile(ConstGroup):
-    """Files"""
+class DDir(ConstGroup):
+    """Directories"""
 
-    CSS_PATH: str = "AISim.tcss"
+    UTILS: str = "utils"
+    DB: str = "db"

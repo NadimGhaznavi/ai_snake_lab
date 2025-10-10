@@ -1,5 +1,5 @@
 """
-Constants/DModelL.py
+constants/DDef.py
 
     AI Snake Game Simulator
     Author: Nadim-Daniel Ghaznavi
@@ -8,10 +8,11 @@ Constants/DModelL.py
     License: GPL 3.0
 """
 
-from Modules.ConstGroup import ConstGroup
+from utils.ConstGroup import ConstGroup
 
 
-class DModelL(ConstGroup):
-    """Linear Model Defaults"""
+class DDef(ConstGroup):
+    """Defaults"""
 
-    LEARNING_RATE: float = 0.000009
+    APP_TITLE: str = "AI Snake Game Simulator"
+    MOVE_DELAY: float = 0.0

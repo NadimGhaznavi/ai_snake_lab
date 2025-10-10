@@ -1,5 +1,5 @@
 """
-Modules/AISim.py
+game/AISim.py
 
     AI Snake Game Simulator
     Author: Nadim-Daniel Ghaznavi
@@ -18,7 +18,7 @@ from textual.reactive import var
 from rich.segment import Segment
 from rich.style import Style
 
-from Modules.GameElements import Direction
+from game.GameElements import Direction
 
 emptyA = "#111111"
 emptyB = "#000000"

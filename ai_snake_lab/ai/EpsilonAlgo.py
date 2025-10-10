@@ -1,5 +1,5 @@
 """
-Modules/EpsilonAlgo.py
+ai/EpsilonAlgo.py
 
     AI Snake Game Simulator
     Author: Nadim-Daniel Ghaznavi
@@ -18,7 +18,7 @@ import random
 from random import randint
 import os, sys
 
-from Constants.DEpsilon import DEpsilon
+from constants.DEpsilon import DEpsilon
 
 
 class EpsilonAlgo:

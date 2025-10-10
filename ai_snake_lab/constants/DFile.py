@@ -1,5 +1,5 @@
 """
-Constants/DDef.py
+constants/DFile.py
 
     AI Snake Game Simulator
     Author: Nadim-Daniel Ghaznavi
@@ -8,11 +8,11 @@ Constants/DDef.py
     License: GPL 3.0
 """
 
-from Modules.ConstGroup import ConstGroup
+from utils.ConstGroup import ConstGroup
 
 
-class DDef(ConstGroup):
-    """Defaults"""
+class DFile(ConstGroup):
+    """Files"""
 
-    APP_TITLE: str = "AI Snake Game Simulator"
-    MOVE_DELAY: float = 0.0
+    CSS_FILE: str = "AISim.tcss"
+    REPLAY_DB: str = "replay_mem.db"

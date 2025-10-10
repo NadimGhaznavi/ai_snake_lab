@@ -1,5 +1,5 @@
 """
-Constants/DReplayMemory.py
+constants/DReplayMemory.py
 
     AI Snake Game Simulator
     Author: Nadim-Daniel Ghaznavi
@@ -8,7 +8,7 @@ Constants/DReplayMemory.py
     License: GPL 3.0
 """
 
-from Modules.ConstGroup import ConstGroup
+from utils.ConstGroup import ConstGroup
 
 
 class MEM_TYPE(ConstGroup):
