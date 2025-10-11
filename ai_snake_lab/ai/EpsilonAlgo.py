@@ -16,9 +16,8 @@ can also be passed in when invoking the main asg.py front end.
 
 import random
 from random import randint
-import os, sys
 
-from constants.DEpsilon import DEpsilon
+from ai_snake_lab.constants.DEpsilon import DEpsilon
 
 
 class EpsilonAlgo:

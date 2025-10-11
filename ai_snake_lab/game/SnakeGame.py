@@ -14,8 +14,8 @@ import numpy as np
 
 from textual.geometry import Offset
 
-from game.GameBoard import GameBoard
-from game.GameElements import Direction
+from ai_snake_lab.game.GameBoard import GameBoard
+from ai_snake_lab.game.GameElements import Direction
 
 # Maximum number of moves. This is multiplied by the length of the snake. The game
 # ends if game moves > MAX_MOVES * length-of-snake. This avoids enless AI looping behavior.

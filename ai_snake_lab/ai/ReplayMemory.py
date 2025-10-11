@@ -12,12 +12,12 @@ This file contains the ReplayMemory class.
 
 import os
 from collections import deque
-import random, sys
+import random
 import sqlite3, pickle
 
-from constants.DReplayMemory import MEM_TYPE
-from constants.DFile import DFile
-from constants.DDir import DDir
+from ai_snake_lab.constants.DReplayMemory import MEM_TYPE
+from ai_snake_lab.constants.DFile import DFile
+from ai_snake_lab.constants.DDir import DDir
 
 
 class ReplayMemory:

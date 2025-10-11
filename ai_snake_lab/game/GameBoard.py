@@ -18,7 +18,7 @@ from textual.reactive import var
 from rich.segment import Segment
 from rich.style import Style
 
-from game.GameElements import Direction
+from ai_snake_lab.game.GameElements import Direction
 
 emptyA = "#111111"
 emptyB = "#000000"
