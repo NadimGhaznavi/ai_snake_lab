@@ -63,7 +63,7 @@ class AISim(App):
     """A Textual app that has an AI Agent playing the Snake Game."""
 
     TITLE = DDef.APP_TITLE
-    CSS_PATH = os.path.join(DDir.UTILS, DFile.CSS_FILE)
+    CSS_PATH = DFile.CSS_FILE
 
     ## Runtime values
     # Current epsilon value (degrades in real-time)

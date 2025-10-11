@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.4.8] - 2025-10-11
+
+### Fixed
+- Fix path to `AISim.tcss`.
+
+---
+
 ## [0.4.7] - 2025-10-11
 
 ### Changed
