@@ -17,6 +17,7 @@ from ai_snake_lab.utils.ConstGroup import ConstGroup
 class DLabel(ConstGroup):
     """Labels"""
 
+    DEFAULTS: str = "Defaults"
     EPSILON: str = "Epsilon"
     EPSILON_DECAY: str = "Epsilon Decay"
     EPSILON_INITIAL: str = "Initial Epsilon"
@@ -36,10 +37,10 @@ class DLabel(ConstGroup):
     SETTINGS: str = "Configuration Settings"
     START: str = "Start"
     STORED_GAMES: str = "Stored Games"
-    RESET: str = "Reset"
+    RESTART: str = "Restart"
     UPDATE: str = "Update"
 
     MODEL_TYPE_TABLE: dict = {
-        ModelL: MODEL_LINEAR,
+        str(ModelL): MODEL_LINEAR,
         ModelRNN: MODEL_RNN,
     }

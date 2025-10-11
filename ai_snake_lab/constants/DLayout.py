@@ -14,11 +14,12 @@ from utils.ConstGroup import ConstGroup
 class DLayout(ConstGroup):
     """Layout"""
 
+    BUTTON_BOX: str = "button_box"
     BUTTON_PAUSE: str = "button_pause"
     BUTTON_QUIT: str = "button_quit"
     BUTTON_ROW: str = "button_row"
     BUTTON_START: str = "button_start"
-    BUTTON_RESET: str = "button_reset"
+    BUTTON_DEFAULTS: str = "button_defaults"
     BUTTON_UPDATE: str = "button_update"
     CUR_EPSILON: str = "cur_epsilon"
     CUR_MEM_TYPE: str = "cur_mem_type"

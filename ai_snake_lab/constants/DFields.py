@@ -14,5 +14,6 @@ from utils.ConstGroup import ConstGroup
 class DField(ConstGroup):
     """Fields"""
 
+    PAUSED: str = "paused"
     RUNNING: str = "running"
     STOPPED: str = "stopped"

@@ -83,7 +83,9 @@ class AISim(App):
     pause_button = Button(label=DLabel.PAUSE, id=DLayout.BUTTON_PAUSE, compact=True)
     start_button = Button(label=DLabel.START, id=DLayout.BUTTON_START, compact=True)
     quit_button = Button(label=DLabel.QUIT, id=DLayout.BUTTON_QUIT, compact=True)
-    reset_button = Button(label=DLabel.RESET, id=DLayout.BUTTON_RESET, compact=True)
+    defaults_button = Button(
+        label=DLabel.DEFAULTS, id=DLayout.BUTTON_DEFAULTS, compact=True
+    )
     update_button = Button(label=DLabel.UPDATE, id=DLayout.BUTTON_UPDATE, compact=True)
 
     def __init__(self) -> None:
@@ -92,12 +94,15 @@ class AISim(App):
         self.snake_game = SnakeGame(game_board=self.game_board, id=DLayout.GAME_BOARD)
         self.epsilon_algo = EpsilonAlgo(seed=RANDOM_SEED)
         self.agent = AIAgent(self.epsilon_algo, seed=RANDOM_SEED)
-        self.running = False
+        self.cur_state = DField.STOPPED
 
         self.score = Label("Game: 0, Highscore: 0, Score: 0")
 
         # Setup the simulator in a background thread
         self.stop_event = threading.Event()
+        self.pause_event = threading.Event()
+        self.pause_event.set()
+        self.running = DField.STOPPED
         self.simulator_thread = threading.Thread(target=self.start_sim, daemon=True)
 
     async def action_quit(self) -> None:
@@ -143,11 +148,16 @@ class AISim(App):
                 Vertical(
                     Horizontal(
                         self.start_button,
-                        self.reset_button,
-                        self.update_button,
                         self.pause_button,
+                        self.quit_button,
+                        classes=DLayout.BUTTON_ROW,
                     ),
-                    id=DLayout.BUTTON_ROW,
+                    Horizontal(
+                        self.defaults_button,
+                        self.update_button,
+                        classes=DLayout.BUTTON_ROW,
+                    ),
+                    id=DLayout.BUTTON_BOX,
                 ),
             ),
             Vertical(
@@ -192,7 +202,7 @@ class AISim(App):
         self.add_class(DField.STOPPED)
 
     def on_quit(self):
-        if self.running == True:
+        if self.running == DField.RUNNING:
             self.stop_event.set()
             if self.simulator_thread.is_alive():
                 self.simulator_thread.join()
@@ -201,17 +211,30 @@ class AISim(App):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         button_id = event.button.id
 
+        # Pause button was pressed
+        if button_id == DLayout.BUTTON_PAUSE:
+            self.pause_event.clear()
+            self.running = DField.PAUSED
+            self.remove_class(DField.RUNNING)
+            self.add_class(DField.STOPPED)
+            self.cur_move_delay = float(self.move_delay_input.value)
+            self.cur_model_type_widget.update(self.agent.model_type())
+
         # Start button was pressed
         if button_id == DLayout.BUTTON_START:
-            self.start_thread()
-            self.running = True
+            if self.running == DField.STOPPED:
+                self.start_thread()
+            elif self.running == DField.PAUSED:
+                self.pause_event.set()
+            self.pause_event.set()
+            self.running = DField.RUNNING
             self.add_class(DField.RUNNING)
             self.remove_class(DField.STOPPED)
             self.cur_move_delay = float(self.move_delay_input.value)
             self.cur_model_type_widget.update(self.agent.model_type())
 
         # Reset button was pressed
-        elif button_id == DLayout.BUTTON_RESET:
+        elif button_id == DLayout.BUTTON_DEFAULTS:
             self.initial_epsilon_input.value = str(DEpsilon.EPSILON_INITIAL)
             self.epsilon_decay_input.value = str(DEpsilon.EPSILON_DECAY)
             self.epsilon_min_input.value = str(DEpsilon.EPSILON_MIN)
@@ -237,6 +260,7 @@ class AISim(App):
         game_box.border_title = f"{DLabel.GAME} #{self.epoch}"
 
         while not self.stop_event.is_set():
+            self.pause_event.wait()
             # The actual training loop...
             old_state = game_board.get_state()
             move = agent.get_move(old_state)

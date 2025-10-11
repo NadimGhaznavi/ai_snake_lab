@@ -5,9 +5,14 @@ Button {
     background: black; 
 }
 
-#button_row {
+#button_box {
+    height: 6;
+}
+
+.button_row {
     width: 32;
 }
+
 #game_board {
     height: 22;
     border: round #0c323e;
@@ -66,12 +71,12 @@ Button {
     text-style: bold;
     align: center middle; }
 
-#button_pause {
-    color: #c44242;
+#button_defaults {
+    color: #3e99af;
     text-style: bold; 
 }
 
-#button_reset {
+#button_pause {
     color: #c49b42;
     text-style: bold; 
 }

@@ -27,7 +27,6 @@ class AITrainer:
     def __init__(self, model):
         torch.manual_seed(1970)
 
-        print(type(model))
         # The learning rate needs to be adjusted for the model type
         if type(model) == ModelL:
             learning_rate = DModelL.LEARNING_RATE
