@@ -52,9 +52,14 @@ Screen {
 
 #game_score_plot {
     dock: bottom;
+    border: round #0c323e;
     height: 15;
     width: 108;
     background: black
+}
+
+#legend {
+    border: round #0c323e;
 }
 
 Button {
