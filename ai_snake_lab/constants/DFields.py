@@ -14,6 +14,11 @@ from utils.ConstGroup import ConstGroup
 class DField(ConstGroup):
     """Fields"""
 
+    # Simulation loop states
     PAUSED: str = "paused"
     RUNNING: str = "running"
     STOPPED: str = "stopped"
+
+    # Stats dictionary keys
+    GAME_SCORE: str = "game_score"
+    GAME_NUM: str = "game_num"

@@ -13,24 +13,25 @@ import time
 import sys, os
 
 from textual.app import App, ComposeResult
-from textual.widgets import Label, Input, Button
+from textual.widgets import Label, Input, Button, Static
 from textual.containers import Vertical, Horizontal
 from textual.reactive import var
 
-from constants.DDef import DDef
-from constants.DEpsilon import DEpsilon
-from constants.DFields import DField
-from constants.DFile import DFile
-from constants.DLayout import DLayout
-from constants.DLabels import DLabel
-from constants.DReplayMemory import MEM_TYPE
-from constants.DDir import DDir
+from ai_snake_lab.constants.DDef import DDef
+from ai_snake_lab.constants.DEpsilon import DEpsilon
+from ai_snake_lab.constants.DFields import DField
+from ai_snake_lab.constants.DFile import DFile
+from ai_snake_lab.constants.DLayout import DLayout
+from ai_snake_lab.constants.DLabels import DLabel
+from ai_snake_lab.constants.DReplayMemory import MEM_TYPE
+from ai_snake_lab.constants.DDir import DDir
 
 
-from ai.AIAgent import AIAgent
-from ai.EpsilonAlgo import EpsilonAlgo
-from game.GameBoard import GameBoard
-from game.SnakeGame import SnakeGame
+from ai_snake_lab.ai.AIAgent import AIAgent
+from ai_snake_lab.ai.EpsilonAlgo import EpsilonAlgo
+from ai_snake_lab.game.GameBoard import GameBoard
+from ai_snake_lab.game.SnakeGame import SnakeGame
+from ai_snake_lab.ui.Db4EPlot import Db4EPlot
 
 RANDOM_SEED = 1970
 
@@ -91,6 +92,16 @@ class AISim(App):
     )
     update_button = Button(label=DLabel.UPDATE, id=DLayout.BUTTON_UPDATE, compact=True)
 
+    # A dictionary to hold runtime statistics
+    stats = {
+        DField.GAME_SCORE: {
+            DField.GAME_NUM: [],
+            DField.GAME_SCORE: [],
+        }
+    }
+
+    game_score_plot = Db4EPlot(title=DLabel.GAME_SCORE, id=DLayout.GAME_SCORE_PLOT)
+
     def __init__(self) -> None:
         super().__init__()
         self.game_board = GameBoard(20, id=DLayout.GAME_BOARD)
@@ -98,8 +109,8 @@ class AISim(App):
         self.epsilon_algo = EpsilonAlgo(seed=RANDOM_SEED)
         self.agent = AIAgent(self.epsilon_algo, seed=RANDOM_SEED)
         self.cur_state = DField.STOPPED
-
-        self.score = Label("Game: 0, Highscore: 0, Score: 0")
+        self.game_score_plot._x_label = DLabel.GAME_NUM
+        self.game_score_plot._y_label = DLabel.GAME_SCORE
 
         # Setup the simulator in a background thread
         self.stop_event = threading.Event()
@@ -182,6 +193,10 @@ class AISim(App):
                 classes=DLayout.BUTTON_ROW,
             ),
         )
+        yield Static(id=DLayout.FILLER_1)
+        yield Static(id=DLayout.FILLER_2)
+        yield Static(id=DLayout.FILLER_3)
+        yield self.game_score_plot
 
     def on_mount(self):
         self.initial_epsilon_input.value = str(DEpsilon.EPSILON_INITIAL)
@@ -327,6 +342,16 @@ class AISim(App):
                     self.cur_epsilon_widget.update(str(round(cur_epsilon, 4)))
                 # Update the number of stored memories
                 self.cur_num_games_widget.update(str(self.agent.memory.get_num_games()))
+                # Update the stats object
+                self.stats[DField.GAME_SCORE][DField.GAME_NUM].append(self.epoch)
+                self.stats[DField.GAME_SCORE][DField.GAME_SCORE].append(score)
+                # Update the plot object
+                self.game_score_plot.load_data(
+                    self.stats[DField.GAME_SCORE][DField.GAME_NUM],
+                    self.stats[DField.GAME_SCORE][DField.GAME_SCORE],
+                    DLabel.GAMES,
+                )
+                self.game_score_plot.db4e_plot()
 
     def start_thread(self):
         self.simulator_thread.start()

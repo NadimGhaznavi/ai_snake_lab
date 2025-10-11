@@ -1,7 +1,7 @@
 Screen {
     layout: grid;
     grid-size: 3 4;
-    grid-rows: 3 6 6 12;
+    grid-rows: 3 6 6 12 10;
     grid-columns: 32 46 30;
 }
 
@@ -24,7 +24,7 @@ Screen {
 }
 
 #game_box {
-    row-span: 10;
+    row-span: 3;
     border-title-color: #5fc442;
     border-subtitle-color: #5fc442;
     border: round #0c323e;
@@ -41,6 +41,21 @@ Screen {
     background: black;
 }
 
+#filler_1 {
+}
+
+#filler_2 {
+}
+
+#filler_3 {
+}
+
+#game_score_plot {
+    dock: bottom;
+    height: 15;
+    width: 108;
+    background: black
+}
 
 Button {
     align: center middle;
