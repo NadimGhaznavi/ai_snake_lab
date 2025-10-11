@@ -81,6 +81,9 @@ class AISim(App):
 
     # Buttons
     pause_button = Button(label=DLabel.PAUSE, id=DLayout.BUTTON_PAUSE, compact=True)
+    restart_button = Button(
+        label=DLabel.RESTART, id=DLayout.BUTTON_RESTART, compact=True
+    )
     start_button = Button(label=DLabel.START, id=DLayout.BUTTON_START, compact=True)
     quit_button = Button(label=DLabel.QUIT, id=DLayout.BUTTON_QUIT, compact=True)
     defaults_button = Button(
@@ -101,7 +104,6 @@ class AISim(App):
         # Setup the simulator in a background thread
         self.stop_event = threading.Event()
         self.pause_event = threading.Event()
-        self.pause_event.set()
         self.running = DField.STOPPED
         self.simulator_thread = threading.Thread(target=self.start_sim, daemon=True)
 
@@ -155,6 +157,7 @@ class AISim(App):
                     Horizontal(
                         self.defaults_button,
                         self.update_button,
+                        self.restart_button,
                         classes=DLayout.BUTTON_ROW,
                     ),
                     id=DLayout.BUTTON_BOX,
@@ -213,23 +216,52 @@ class AISim(App):
 
         # Pause button was pressed
         if button_id == DLayout.BUTTON_PAUSE:
-            self.pause_event.clear()
+            self.pause_event.set()
             self.running = DField.PAUSED
             self.remove_class(DField.RUNNING)
-            self.add_class(DField.STOPPED)
+            self.add_class(DField.PAUSED)
             self.cur_move_delay = float(self.move_delay_input.value)
             self.cur_model_type_widget.update(self.agent.model_type())
 
+        # Restart button was pressed
+        elif button_id == DLayout.BUTTON_RESTART:
+            self.running = DField.STOPPED
+            self.add_class(DField.STOPPED)
+            self.remove_class(DField.PAUSED)
+
+            # Signal thread to stop
+            self.stop_event.set()
+            # Unpause so we can exit cleanly
+            self.pause_event.clear()
+            # Join the old thread
+            if self.simulator_thread.is_alive():
+                self.simulator_thread.join(timeout=2)
+
+            # Reset the game and the UI
+            self.snake_game.reset()
+            score = 0
+            highscore = 0
+            self.epoch = 1
+            game_box = self.query_one(f"#{DLayout.GAME_BOX}", Vertical)
+            game_box.border_title = ""
+            game_box.border_subtitle = ""
+
+            # Recreate events and get a new thread
+            self.stop_event = threading.Event()
+            self.pause_event = threading.Event()
+            self.simulator_thread = threading.Thread(target=self.start_sim, daemon=True)
+
         # Start button was pressed
-        if button_id == DLayout.BUTTON_START:
+        elif button_id == DLayout.BUTTON_START:
             if self.running == DField.STOPPED:
                 self.start_thread()
             elif self.running == DField.PAUSED:
-                self.pause_event.set()
-            self.pause_event.set()
+                self.pause_event.clear()
+            self.pause_event.clear()
             self.running = DField.RUNNING
             self.add_class(DField.RUNNING)
             self.remove_class(DField.STOPPED)
+            self.remove_class(DField.PAUSED)
             self.cur_move_delay = float(self.move_delay_input.value)
             self.cur_model_type_widget.update(self.agent.model_type())
 
@@ -260,7 +292,10 @@ class AISim(App):
         game_box.border_title = f"{DLabel.GAME} #{self.epoch}"
 
         while not self.stop_event.is_set():
-            self.pause_event.wait()
+            if self.pause_event.is_set():
+                self.pause_event.wait()
+                time.sleep(0.2)
+                continue
             # The actual training loop...
             old_state = game_board.get_state()
             move = agent.get_move(old_state)

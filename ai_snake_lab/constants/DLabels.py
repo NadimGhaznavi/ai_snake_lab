@@ -32,6 +32,7 @@ class DLabel(ConstGroup):
     MOVE_DELAY: str = "Move Delay"
     PAUSE: str = "Pause"
     QUIT: str = "Quit"
+    RESTART: str = "Restart"
     RUNTIME: str = "Runtime Values"
     SCORE: str = "Score"
     SETTINGS: str = "Configuration Settings"

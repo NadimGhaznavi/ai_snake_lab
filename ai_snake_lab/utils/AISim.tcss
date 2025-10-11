@@ -86,6 +86,11 @@ Button {
     text-style: bold; 
 }
 
+#button_restart {
+    color: #3e99af;
+    text-style: bold; 
+}
+
 #button_quit {
     color: #c44242;
     text-style: bold; 
@@ -105,16 +110,32 @@ Button {
     color: #afa73eff;
 }
 
-.running #button_start {
-    display: none;
-}
-
 .label_settings {
     color: #5fc442;
     width: 18;
 }
 
+.paused #button_pause {
+    display: none;
+}
+
+.paused #button_update {
+    display: none;
+}
+
 .running #button_reset {
+    display: none;
+}
+
+.running #button_restart {
+    display: none;
+}
+
+.stopped #button_restart {
+    display: none;
+}
+
+.running #button_start {
     display: none;
 }
 
