@@ -17,5 +17,5 @@ class DModelL(ConstGroup):
     LEARNING_RATE: float = 0.000009
     # The number of nodes in the hidden layer
     HIDDEN_SIZE: int = 170
-    # The dropout value, 0.2 == 20%
+    # The dropout value, 0.2 represents 20%
     P_VALUE: float = 0.2

@@ -27,8 +27,41 @@
 
 ---
 
-# Links
+# Installation
 
-* [Project Layout](/pages/project_layout.html)
-* [SQLite3 Schema](/pages/db_schema.html)
+This project is on [PyPI](https://pypi.org/project/ai-snake-lab/). You can install the *AI Snake Lab* software using `pip`.
+
+## Create a Sandbox 
+
+```shell
+python3 -m venv snake_venv
+. snake_venv/bin/activate
+```
+
+## Install the AI Snake Lab
+
+After you have activated your *venv* environment:
+
+```shell
+pip install ai-snake-lab
+```
+
+---
+
+# Running the AI Snake Lab
+
+From within your *venv* environment:
+
+```shell
+ai-snake-lab
+```
+
+---
+
+# Links and Acknowledgements
+
+This code is based on a YouTube tutorial, [Python + PyTorch + Pygame Reinforcement Learning – Train an AI to Play Snake](https://www.youtube.com/watch?v=L8ypSXwyBds&t=1042s&ab_channel=freeCodeCamp.org) by Patrick Loeber. You can access his original code [here](https://github.com/patrickloeber/snake-ai-pytorch) on GitHub. Thank you Patrick!!! You are amazing!!!!
+
+Thanks also go out to Will McGugan and the [Textual](https://textual.textualize.io/) team. Textual is an amazing framework. Talk about *rapid Application Development*. Porting this took less than a day.
+
 ---

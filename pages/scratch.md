@@ -54,9 +54,7 @@ After you activate your *venv* environment:
 pip install textual textual-dev numpy
 ```
 
-## Install Pytorch
 
-To install pytorch go to [pytorch.org](https://pytorch.org/) and scroll down till you come to the *Install PyTorch* section. Click on your platform (Linux, Mac, Windows), choose a compute platform and cut-and-paste the *run this command*. I'm running Linux and I don't have a GPU, but your setup may be different.
 
 ## Download my Code
 

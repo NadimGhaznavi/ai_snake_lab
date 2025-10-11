@@ -129,6 +129,12 @@ class SnakeGame:
             game_over = True
             reward = -10
 
+        # Set a negative reward if the snake head is adjacent to the snake body.
+        # This is to discourage snake collisions.
+        for segment in self.snake[1:]:
+            if abs(self.head.x - segment.x) < 2 and abs(self.head.y - segment.y) < 2:
+                reward -= -1
+
         if game_over == True:
             # Game is over: Snake or wall collision or exceeded max moves
             self.game_reward += reward
