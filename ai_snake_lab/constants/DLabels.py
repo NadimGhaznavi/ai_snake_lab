@@ -17,6 +17,9 @@ from ai_snake_lab.utils.ConstGroup import ConstGroup
 class DLabel(ConstGroup):
     """Labels"""
 
+    AVERAGE: str = "Average"
+    CURRENT: str = "Current"
+    CURRENT_EPSILON: str = "Current Epsilon"
     DEFAULTS: str = "Defaults"
     EPSILON: str = "Epsilon"
     EPSILON_DECAY: str = "Epsilon Decay"

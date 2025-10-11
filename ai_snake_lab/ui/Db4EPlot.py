@@ -10,13 +10,14 @@ db4e/Modules/Db4EPlot.py
 
 import math
 from collections import deque
-from textual_plot import PlotWidget, HiResMode
+from textual_plot import PlotWidget, HiResMode, LegendLocation
 from textual.app import ComposeResult
 
 from ai_snake_lab.constants.DDb4EPlot import Plot
+from ai_snake_lab.constants.DLabels import DLabel
 
 
-MAX_DATA_POINTS = 100
+MAX_DATA_POINTS = Plot.MAX_DATA_POINTS
 
 
 class Db4EPlot(PlotWidget):
@@ -74,7 +75,27 @@ class Db4EPlot(PlotWidget):
             y=reduced_values,
             hires_mode=HiResMode.BRAILLE,
             line_style="green",
+            label=DLabel.CURRENT,
         )
+
+        # Add an average plot over 20 to wash out the spikes and identify when the
+        # AI is maxing out.
+        window = max(1, len(reduced_values) // 20)  # e.g., 5% smoothing window
+        if len(reduced_values) > window:
+            smoothed = [
+                sum(reduced_values[i : i + window])
+                / len(reduced_values[i : i + window])
+                for i in range(len(reduced_values) - window + 1)
+            ]
+            smoothed_days = reduced_days[window - 1 :]
+            self.plot(
+                x=smoothed_days,
+                y=smoothed,
+                hires_mode=HiResMode.BRAILLE,
+                line_style="red",  # distinct color for trend
+                label=DLabel.AVERAGE,
+            )
+        self.show_legend(location=LegendLocation.TOPLEFT)
 
     def reduce_data2(self, times, values):
         # Reduce the total number of data points, otherwise the plot gets "blurry"
@@ -89,7 +110,6 @@ class Db4EPlot(PlotWidget):
             for i in range(0, len(values), step)
         ]
         results = reduced_times[: len(reduced_values)], reduced_values
-        print(f"Db4EPlot:reduce_data(): results: {results}")
         return results
 
     def reduce_data(self, times, values):

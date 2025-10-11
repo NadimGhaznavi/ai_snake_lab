@@ -24,8 +24,8 @@ class AIAgent:
     def __init__(self, epsilon_algo: EpsilonAlgo, seed: int):
         self.epsilon_algo = epsilon_algo
         self.memory = ReplayMemory(seed=seed)
-        self._model = ModelL(seed=seed)
-        # self._model = ModelRNN(seed=seed)
+        # self._model = ModelL(seed=seed)
+        self._model = ModelRNN(seed=seed)
         self.trainer = AITrainer(model=self._model)
 
         if type(self._model) == ModelRNN:

@@ -36,7 +36,6 @@ class ModelRNN(nn.Module):
         self.m_out = nn.Linear(hidden_size, output_size)
 
     def forward(self, x):
-        print(f"x shape: {x.shape}")
         x = self.m_in(x)
         inputs = x.view(1, -1, 200)
         x, h_n = self.m_rnn(inputs)

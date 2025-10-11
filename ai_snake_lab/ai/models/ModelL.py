@@ -12,15 +12,18 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from ai_snake_lab.constants.DSim import DSim
+from ai_snake_lab.constants.DModelL import DModelL
+
 
 class ModelL(nn.Module):
     def __init__(self, seed: int):
         super(ModelL, self).__init__()
         torch.manual_seed(seed)
-        input_size = 30  # Size of the "state" as tracked by the GameBoard
-        hidden_size = 170
-        output_size = 3
-        p_value = 0.2
+        input_size = DSim.STATE_SIZE  # Size of the "state" as tracked by the GameBoard
+        hidden_size = DModelL.HIDDEN_SIZE
+        output_size = DSim.OUTPUT_SIZE
+        p_value = DModelL.P_VALUE
         self.input_block = nn.Sequential(
             nn.Linear(input_size, hidden_size),
             nn.ReLU(),

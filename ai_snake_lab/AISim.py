@@ -17,6 +17,7 @@ from textual.app import App, ComposeResult
 from textual.widgets import Label, Input, Button, Static
 from textual.containers import Vertical, Horizontal
 from textual.reactive import var
+from textual.theme import Theme
 
 from ai_snake_lab.constants.DDef import DDef
 from ai_snake_lab.constants.DEpsilon import DEpsilon
@@ -36,6 +37,26 @@ from ai_snake_lab.game.SnakeGame import SnakeGame
 from ai_snake_lab.ui.Db4EPlot import Db4EPlot
 
 RANDOM_SEED = 1970
+
+snake_lab_theme = Theme(
+    name="db4e",
+    primary="#88C0D0",
+    secondary="#1f6a83ff",
+    accent="#B48EAD",
+    foreground="#31b8e6",
+    background="black",
+    success="#A3BE8C",
+    warning="#EBCB8B",
+    error="#BF616A",
+    surface="black",
+    panel="#000000",
+    dark=True,
+    variables={
+        "block-cursor-text-style": "none",
+        "footer-key-foreground": "#88C0D0",
+        "input-selection-background": "#81a1c1 35%",
+    },
+)
 
 
 class AISim(App):
@@ -237,6 +258,11 @@ class AISim(App):
         self.cur_num_games_widget.update(str(self.agent.memory.get_num_games()))
         # Initial state is that the app is stopped
         self.add_class(DField.STOPPED)
+        # Register the theme
+        self.register_theme(snake_lab_theme)
+
+        # Set the app's theme
+        self.theme = "db4e"
 
     def on_quit(self):
         if self.running == DField.RUNNING:
