@@ -426,6 +426,10 @@ def minutes_to_uptime(seconds: int):
         return f"{seconds}s"
 
 
-if __name__ == "__main__":
+def main():
     app = AISim()
     app.run()
+
+
+if __name__ == "__main__":
+    main()

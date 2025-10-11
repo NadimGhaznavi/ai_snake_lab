@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.4.6] - 2025-10-11
+
+### Fixed
+- Add main() function to `AISim.py` so the CLI entry point `ai-snake-lab` works after a `pip install ai-snake-lab`.
+
+---
+
 ## [0.4.5] - 2025-10-11
 
 ### Fixed
