@@ -14,5 +14,5 @@ from utils.ConstGroup import ConstGroup
 class DDef(ConstGroup):
     """Defaults"""
 
-    APP_TITLE: str = "AI Snake Game Simulator"
+    APP_TITLE: str = "AI Snake Game Lab"
     MOVE_DELAY: float = 0.0

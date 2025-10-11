@@ -54,6 +54,9 @@ class SnakeGame:
         self.game_board.update_snake(snake=self.snake, direction=self.direction)
         self.game_board.update_food(food=self.food)
 
+        # Track the distance from the snake head to the food to feed the reward system
+        self.distance_to_food = self.game_board.board_size() // 2
+
         # The current game score
         self.game_score = 0
 
@@ -141,6 +144,14 @@ class SnakeGame:
 
         else:
             self.snake.pop()
+
+        ## 5. See if we're closer to the food than the last move, or further away
+        cur_distance = abs(self.head.x - self.food.x) + abs(self.head.y - self.food.y)
+        if cur_distance < self.distance_to_food:
+            reward += 2
+        elif cur_distance > self.distance_to_food:
+            reward -= 2
+        self.distance_to_food = cur_distance
 
         self.game_reward += reward
         self.game_board.update_snake(snake=self.snake, direction=self.direction)

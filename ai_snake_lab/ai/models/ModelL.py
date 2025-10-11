@@ -20,7 +20,7 @@ class ModelL(nn.Module):
         input_size = 30  # Size of the "state" as tracked by the GameBoard
         hidden_size = 170
         output_size = 3
-        p_value = 0.1
+        p_value = 0.2
         self.input_block = nn.Sequential(
             nn.Linear(input_size, hidden_size),
             nn.ReLU(),
