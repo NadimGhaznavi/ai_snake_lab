@@ -4,7 +4,10 @@ Button {
     width: 10;
     background: black; 
 }
-    
+
+#button_row {
+    width: 32;
+}
 #game_board {
     height: 22;
     border: round #0c323e;
@@ -25,7 +28,8 @@ Button {
 }
 
 #runtime_box {
-    height: 24;
+    height: 6;
+    width: 30;
     border-title-color: #5fc442;
     border-title-style: bold;
     border: round #0c323e;
@@ -44,6 +48,7 @@ Button {
 
 #settings_box {
     height: 6;
+    width: 32;
     border-title-color: #5fc442;
     border-title-style: bold;
     border: round #0c323e;
@@ -53,10 +58,10 @@ Button {
 
 #title {
     height: 3;
+    width: 108;
     padding: 0 1;
     border: round #0c323e;
     color: #3e99af;
-    width: 100%;
     background: black;
     text-style: bold;
     align: center middle; }
@@ -91,6 +96,7 @@ Button {
 }
 
 .label {
+    width: 15;
     color: #afa73eff;
 }
 
@@ -100,6 +106,11 @@ Button {
 
 .label_settings {
     color: #5fc442;
+    width: 18;
+}
+
+.running #button_reset {
+    display: none;
 }
 
 .stopped #button_pause {

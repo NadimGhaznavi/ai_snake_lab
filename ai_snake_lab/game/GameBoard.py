@@ -68,6 +68,19 @@ class GameBoard(ScrollView):
     def board_size(self) -> int:
         return self._board_size
 
+    def get_binary(self, bits_needed, some_int):
+        # This is used in the state map, the get_state() function.
+        some_int = int(some_int)
+        bin_str = format(some_int, "b")
+        out_list = []
+        for bit in range(len(bin_str)):
+            out_list.append(bin_str[bit])
+        for zero in range(bits_needed - len(out_list)):
+            out_list.insert(0, "0")
+        for x in range(bits_needed):
+            out_list[x] = int(out_list[x])
+        return out_list
+
     def get_state(self):
 
         head = self.snake_head
@@ -80,7 +93,7 @@ class GameBoard(ScrollView):
         dir_r = direction == Direction.RIGHT
         dir_u = direction == Direction.UP
         dir_d = direction == Direction.DOWN
-
+        slb = self.get_binary(7, len(self.snake_body))
         state = [
             # 1. Snake collision straight ahead
             (dir_r and self.is_snake_collision(point_r))
@@ -97,47 +110,48 @@ class GameBoard(ScrollView):
             or (dir_u and self.is_snake_collision(point_l))
             or (dir_r and self.is_snake_collision(point_u))
             or (dir_l and self.is_snake_collision(point_d)),
-            # 4. divider
-            0,
-            # 5. Wall collision straight ahead
+            # 4. Wall collision straight ahead
             (dir_r and self.is_wall_collision(point_r))
             or (dir_l and self.is_wall_collision(point_l))
             or (dir_u and self.is_wall_collision(point_u))
             or (dir_d and self.is_wall_collision(point_d)),
-            # 6. Wall collision to the right
+            # 5. Wall collision to the right
             (dir_u and self.is_wall_collision(point_r))
             or (dir_d and self.is_wall_collision(point_l))
             or (dir_l and self.is_wall_collision(point_u))
             or (dir_r and self.is_wall_collision(point_d)),
-            # 7. Wall collision to the left
+            # 6. Wall collision to the left
             (dir_d and self.is_wall_collision(point_r))
             or (dir_u and self.is_wall_collision(point_l))
             or (dir_r and self.is_wall_collision(point_u))
             or (dir_l and self.is_wall_collision(point_d)),
-            # 8. divider
-            0,
-            # 9, 10, 11, 12. Last move direction
+            # 7 - 10. Last move direction
             dir_l,
             dir_r,
             dir_u,
             dir_d,
-            # 13. divider
-            0,
-            # 14 - 23. Food location
-            self.food.x < self.snake_head.x,  # Food left
-            self.food.x > self.snake_head.x,  # Food right
-            self.food.y < self.snake_head.y,  # Food up
-            self.food.y > self.snake_head.y,  # Food down
-            self.food.x == self.snake_head.x,
+            # 11 - 19. Food location
+            self.food.x < self.snake_head.x,  # 11. Food left
+            self.food.x > self.snake_head.x,  # 12. Food right
+            self.food.y < self.snake_head.y,  # 13. Food up
+            self.food.y > self.snake_head.y,  # 14. Food down
+            self.food.x == self.snake_head.x,  # 15.
             self.food.x == self.snake_head.x
-            and self.food.y > self.snake_head.y,  # Food ahead
+            and self.food.y > self.snake_head.y,  # 16. Food ahead
             self.food.x == self.snake_head.x
-            and self.food.y < self.snake_head.y,  # Food behind
-            self.food.y == self.snake_head.y,
+            and self.food.y < self.snake_head.y,  # 17. Food behind
             self.food.y == self.snake_head.y
-            and self.food.x > self.snake_head.x,  # Food above
+            and self.food.x > self.snake_head.x,  # 18. Food above
             self.food.y == self.snake_head.y
-            and self.food.x < self.snake_head.x,  # Food below
+            and self.food.x < self.snake_head.x,  # 19. Food below
+            # 20 - 26. Snake length in binary
+            slb[0],
+            slb[1],
+            slb[2],
+            slb[3],
+            slb[4],
+            slb[5],
+            slb[6],
         ]
 
         # 24, 25, 26 and 27. Previous direction of the snake

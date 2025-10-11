@@ -9,13 +9,14 @@ ai/Agent.py
 """
 
 import torch
-from ai.EpsilonAlgo import EpsilonAlgo
-from ai.ReplayMemory import ReplayMemory
-from ai.AITrainer import AITrainer
-from ai.models.ModelL import ModelL
-from ai.models.ModelRNN import ModelRNN
+from ai_snake_lab.ai.EpsilonAlgo import EpsilonAlgo
+from ai_snake_lab.ai.ReplayMemory import ReplayMemory
+from ai_snake_lab.ai.AITrainer import AITrainer
+from ai_snake_lab.ai.models.ModelL import ModelL
+from ai_snake_lab.ai.models.ModelRNN import ModelRNN
 
-from constants.DReplayMemory import MEM_TYPE
+from ai_snake_lab.constants.DReplayMemory import MEM_TYPE
+from ai_snake_lab.constants.DLabels import DLabel
 
 
 class AIAgent:
@@ -23,15 +24,12 @@ class AIAgent:
     def __init__(self, epsilon_algo: EpsilonAlgo, seed: int):
         self.epsilon_algo = epsilon_algo
         self.memory = ReplayMemory(seed=seed)
-        self.model = ModelL(seed=seed)
-        # self.model = ModelRNN(seed=seed)
-        self.trainer = AITrainer(self.model)
+        self._model = ModelL(seed=seed)
+        # self._model = ModelRNN(seed=seed)
+        self.trainer = AITrainer(model=self._model)
 
-        if type(self.model) == ModelRNN:
+        if type(self._model) == ModelRNN:
             self.memory.mem_type(MEM_TYPE.RANDOM_GAME)
-
-    def get_model(self):
-        return self.model
 
     def get_move(self, state):
         random_move = self.epsilon_algo.get_move()  # Explore with epsilon
@@ -42,13 +40,22 @@ class AIAgent:
         final_move = [0, 0, 0]
         if type(state) != torch.Tensor:
             state = torch.tensor(state, dtype=torch.float)  # Convert to a tensor
-        prediction = self.model(state)  # Get the prediction
+        prediction = self._model(state)  # Get the prediction
         move = torch.argmax(prediction).item()  # Select the move with the highest value
         final_move[move] = 1  # Set the move
         return final_move  # Return
 
     def get_optimizer(self):
         return self.trainer.get_optimizer()
+
+    def model_type(self):
+        if type(self._model) == ModelL:
+            return DLabel.MODEL_LINEAR
+        elif type(self._model) == ModelRNN:
+            return DLabel.MODEL_RNN
+
+    def model(self):
+        return self._model
 
     def played_game(self, score):
         self.epsilon_algo.played_game()
@@ -57,15 +64,12 @@ class AIAgent:
         # Store the state, action, reward, next_state, and done in memory
         self.memory.append((state, action, reward, next_state, done))
 
-    def set_model(self, model):
-        self.model = model
-
     def set_optimizer(self, optimizer):
         self.trainer.set_optimizer(optimizer)
 
     def train_long_memory(self):
         # Train on 5 games
-        max_games = 5
+        max_games = 2
         # Get a random full game
         while max_games > 0:
             max_games -= 1

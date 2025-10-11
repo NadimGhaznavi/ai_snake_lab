@@ -14,5 +14,6 @@ from utils.ConstGroup import ConstGroup
 class DDir(ConstGroup):
     """Directories"""
 
-    UTILS: str = "utils"
+    AI_SNAKE_LAB: str = "ai_snake_lab"
     DB: str = "db"
+    UTILS: str = "utils"

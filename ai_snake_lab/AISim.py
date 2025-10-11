@@ -46,10 +46,12 @@ class AISim(App):
     cur_epsilon_widget = Label("N/A", id=DLayout.CUR_EPSILON)
     # Current memory type
     cur_mem_type_widget = Label("N/A", id=DLayout.CUR_MEM_TYPE)
-    # Number of stored memories
-    cur_num_memories_widget = Label("N/A", id=DLayout.NUM_MEMORIES)
-    # Runtime move delay value
+    # Current model type
+    cur_model_type_widget = Label("N/A", id=DLayout.CUR_MODEL_TYPE)
+    # Time delay between moves
     cur_move_delay = DDef.MOVE_DELAY
+    # Number of stored games in the ReplayMemory
+    cur_num_games_widget = Label("N/A", id=DLayout.NUM_GAMES)
 
     # Intial Settings for Epsilon
     initial_epsilon_input = Input(
@@ -113,27 +115,25 @@ class AISim(App):
                 Vertical(
                     Horizontal(
                         Label(
-                            f"{DLabel.EPSILON_INITIAL} : ",
+                            f"{DLabel.EPSILON_INITIAL}",
                             classes=DLayout.LABEL_SETTINGS,
                         ),
                         self.initial_epsilon_input,
                     ),
                     Horizontal(
                         Label(
-                            f"{DLabel.EPSILON_DECAY}   : ",
+                            f"{DLabel.EPSILON_DECAY}",
                             classes=DLayout.LABEL_SETTINGS,
                         ),
                         self.epsilon_decay_input,
                     ),
                     Horizontal(
-                        Label(
-                            f"{DLabel.EPSILON_MIN} : ", classes=DLayout.LABEL_SETTINGS
-                        ),
+                        Label(f"{DLabel.EPSILON_MIN}", classes=DLayout.LABEL_SETTINGS),
                         self.epsilon_min_input,
                     ),
                     Horizontal(
                         Label(
-                            f"{DLabel.MOVE_DELAY}      : ",
+                            f"{DLabel.MOVE_DELAY}",
                             classes=DLayout.LABEL_SETTINGS,
                         ),
                         self.move_delay_input,
@@ -145,7 +145,7 @@ class AISim(App):
                         self.start_button,
                         self.reset_button,
                         self.update_button,
-                        self.quit_button,
+                        self.pause_button,
                     ),
                     id=DLayout.BUTTON_ROW,
                 ),
@@ -156,16 +156,20 @@ class AISim(App):
             ),
             Vertical(
                 Horizontal(
-                    Label(f"{DLabel.EPSILON} : ", classes=DLayout.LABEL),
+                    Label(f"{DLabel.EPSILON}", classes=DLayout.LABEL),
                     self.cur_epsilon_widget,
                 ),
                 Horizontal(
-                    Label(f"{DLabel.MEM_TYPE} : ", classes=DLayout.LABEL),
+                    Label(f"{DLabel.MEM_TYPE}", classes=DLayout.LABEL),
                     self.cur_mem_type_widget,
                 ),
                 Horizontal(
-                    Label(f"{DLabel.MEMORIES} : ", classes=DLayout.LABEL),
-                    self.cur_num_memories_widget,
+                    Label(f"{DLabel.STORED_GAMES}", classes=DLayout.LABEL),
+                    self.cur_num_games_widget,
+                ),
+                Horizontal(
+                    Label(f"{DLabel.MODEL_TYPE}", classes=DLayout.LABEL),
+                    self.cur_model_type_widget,
                 ),
                 id=DLayout.RUNTIME_BOX,
             ),
@@ -183,7 +187,7 @@ class AISim(App):
         self.cur_mem_type_widget.update(
             MEM_TYPE.MEM_TYPE_TABLE[self.agent.memory.mem_type()]
         )
-        self.cur_num_memories_widget.update(str(self.agent.memory.get_num_games()))
+        self.cur_num_games_widget.update(str(self.agent.memory.get_num_games()))
         # Initial state is that the app is stopped
         self.add_class(DField.STOPPED)
 
@@ -196,6 +200,7 @@ class AISim(App):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         button_id = event.button.id
+
         # Start button was pressed
         if button_id == DLayout.BUTTON_START:
             self.start_thread()
@@ -203,15 +208,19 @@ class AISim(App):
             self.add_class(DField.RUNNING)
             self.remove_class(DField.STOPPED)
             self.cur_move_delay = float(self.move_delay_input.value)
+            self.cur_model_type_widget.update(self.agent.model_type())
+
         # Reset button was pressed
         elif button_id == DLayout.BUTTON_RESET:
             self.initial_epsilon_input.value = str(DEpsilon.EPSILON_INITIAL)
             self.epsilon_decay_input.value = str(DEpsilon.EPSILON_DECAY)
             self.epsilon_min_input.value = str(DEpsilon.EPSILON_MIN)
             self.move_delay_input.value = str(DDef.MOVE_DELAY)
+
         # Quit button was pressed
         elif button_id == DLayout.BUTTON_QUIT:
             self.on_quit()
+
         # Update button was pressed
         elif button_id == DLayout.BUTTON_UPDATE:
             self.cur_move_delay = float(self.move_delay_input.value)
@@ -263,9 +272,7 @@ class AISim(App):
                 else:
                     self.cur_epsilon_widget.update(str(round(cur_epsilon, 4)))
                 # Update the number of stored memories
-                self.cur_num_memories_widget.update(
-                    str(self.agent.memory.get_num_games())
-                )
+                self.cur_num_games_widget.update(str(self.agent.memory.get_num_games()))
 
     def start_thread(self):
         self.simulator_thread.start()

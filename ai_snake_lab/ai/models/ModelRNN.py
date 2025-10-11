@@ -17,7 +17,7 @@ class ModelRNN(nn.Module):
     def __init__(self, seed: int):
         super(ModelRNN, self).__init__()
         torch.manual_seed(seed)
-        input_size = 27
+        input_size = 30
         hidden_size = 200
         output_size = 3
         rnn_layers = 4
@@ -36,6 +36,7 @@ class ModelRNN(nn.Module):
         self.m_out = nn.Linear(hidden_size, output_size)
 
     def forward(self, x):
+        print(f"x shape: {x.shape}")
         x = self.m_in(x)
         inputs = x.view(1, -1, 200)
         x, h_n = self.m_rnn(inputs)

@@ -31,7 +31,11 @@ class ReplayMemory:
         self.max_states = 15000
         self.max_shuffle_games = 40
         self.max_games = 500
-        self.db_file = DFile.REPLAY_DB
+        self.db_file = os.path.join(DDir.AI_SNAKE_LAB, DDir.DB, DFile.REPLAY_DB)
+
+        # Delete the replay memory file, if it exists
+        if os.path.exists(self.db_file):
+            os.remove(self.db_file)
 
         if self._mem_type == MEM_TYPE.SHUFFLE:
             # States are stored in a deque and a random sample will be returned

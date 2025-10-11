@@ -17,7 +17,7 @@ class ModelL(nn.Module):
     def __init__(self, seed: int):
         super(ModelL, self).__init__()
         torch.manual_seed(seed)
-        input_size = 27  # Size of the "state" as tracked by the GameBoard
+        input_size = 30  # Size of the "state" as tracked by the GameBoard
         hidden_size = 170
         output_size = 3
         p_value = 0.1

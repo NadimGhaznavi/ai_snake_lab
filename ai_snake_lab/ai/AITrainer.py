@@ -15,23 +15,28 @@ import numpy as np
 import time
 import sys
 
-from ai.models.ModelL import ModelL
-from ai.models.ModelRNN import ModelRNN
+from ai_snake_lab.ai.models.ModelL import ModelL
+from ai_snake_lab.ai.models.ModelRNN import ModelRNN
 
-from constants.DModelL import DModelL
-from constants.DModelLRNN import DModelRNN
+from ai_snake_lab.constants.DModelL import DModelL
+from ai_snake_lab.constants.DModelLRNN import DModelRNN
 
 
 class AITrainer:
 
     def __init__(self, model):
         torch.manual_seed(1970)
-        self.model = model
+
+        print(type(model))
         # The learning rate needs to be adjusted for the model type
         if type(model) == ModelL:
             learning_rate = DModelL.LEARNING_RATE
         elif type(model) == ModelRNN:
             learning_rate = DModelRNN.LEARNING_RATE
+        else:
+            raise ValueError(f"Unknown model type: {type(model)}")
+
+        self.model = model
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
         self.criterion = nn.MSELoss()
         self.gamma = 0.9

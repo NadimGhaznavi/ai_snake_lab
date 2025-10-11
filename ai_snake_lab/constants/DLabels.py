@@ -8,7 +8,10 @@ constants/DLabels.py
     License: GPL 3.0
 """
 
-from utils.ConstGroup import ConstGroup
+from ai_snake_lab.ai.models.ModelL import ModelL
+from ai_snake_lab.ai.models.ModelRNN import ModelRNN
+
+from ai_snake_lab.utils.ConstGroup import ConstGroup
 
 
 class DLabel(ConstGroup):
@@ -21,8 +24,10 @@ class DLabel(ConstGroup):
     GAME: str = "Game"
     HIGHSCORE: str = "Highscore"
     MEM_TYPE: str = "Memory Type"
-    MEMORIES: str = "Memories"
     MIN_EPSILON: str = "Minimum Epsilon"
+    MODEL_LINEAR: str = "Linear"
+    MODEL_RNN: str = "RNN"
+    MODEL_TYPE: str = "Model Type"
     MOVE_DELAY: str = "Move Delay"
     PAUSE: str = "Pause"
     QUIT: str = "Quit"
@@ -30,5 +35,11 @@ class DLabel(ConstGroup):
     SCORE: str = "Score"
     SETTINGS: str = "Configuration Settings"
     START: str = "Start"
+    STORED_GAMES: str = "Stored Games"
     RESET: str = "Reset"
     UPDATE: str = "Update"
+
+    MODEL_TYPE_TABLE: dict = {
+        ModelL: MODEL_LINEAR,
+        ModelRNN: MODEL_RNN,
+    }
