@@ -8,7 +8,7 @@ constants/DFile.py
     License: GPL 3.0
 """
 
-from utils.ConstGroup import ConstGroup
+from ai_snake_lab.utils.ConstGroup import ConstGroup
 
 
 class DFile(ConstGroup):
