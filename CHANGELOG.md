@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.4.5] - 2025-10-11
+
+### Fixed
+- Fix import statements in `ai`/* and `game`/* files.
+
+---
+
 ## [0.4.4] - 2025-10-11
 
 ### Fixed
