@@ -14,10 +14,11 @@ import os
 from collections import deque
 import random
 import sqlite3, pickle
+import tempfile
+import shutil
 
 from ai_snake_lab.constants.DReplayMemory import MEM_TYPE
-from ai_snake_lab.constants.DFile import DFile
-from ai_snake_lab.constants.DDir import DDir
+from ai_snake_lab.constants.DDef import DDef
 
 
 class ReplayMemory:
@@ -31,11 +32,6 @@ class ReplayMemory:
         self.max_states = 15000
         self.max_shuffle_games = 40
         self.max_games = 500
-        self.db_file = os.path.join(DDir.AI_SNAKE_LAB, DDir.DB, DFile.REPLAY_DB)
-
-        # Delete the replay memory file, if it exists
-        if os.path.exists(self.db_file):
-            os.remove(self.db_file)
 
         if self._mem_type == MEM_TYPE.SHUFFLE:
             # States are stored in a deque and a random sample will be returned
@@ -46,13 +42,33 @@ class ReplayMemory:
             # A complete game will be returned
             self.cur_memory = []
 
+        # Get a temporary directory for the DB file
+        self._tmpfile = tempfile.NamedTemporaryFile(suffix=DDef.DOT_DB, delete=False)
+        self.db_file = self._tmpfile.name
+
         # Connect to SQLite
         self.conn = sqlite3.connect(self.db_file, check_same_thread=False)
+
+        # Get a cursor
         self.cursor = self.conn.cursor()
+
+        # We don't need the file handle anymore
+        self._tmpfile.close()
+
+        # Intialize the schema
         self.init_db()
 
-    def __len__(self):
-        return len(self.memories)
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass  # avoid errors on interpreter shutdown
 
     def append(self, transition):
         """Add a transition to the current game."""
@@ -75,7 +91,12 @@ class ReplayMemory:
 
     def close(self):
         """Close the database connection."""
-        self.conn.close()
+        if getattr(self, "conn", None):
+            self.conn.close()
+            self.conn = None
+        if getattr(self, "db_file", None) and os.path.exists(self.db_file):
+            os.remove(self.db_file)
+            self.db_file = None
 
     def get_random_game(self):
         """Return a random full game from the database."""

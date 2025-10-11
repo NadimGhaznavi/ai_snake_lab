@@ -15,4 +15,3 @@ class DFile(ConstGroup):
     """Files"""
 
     CSS_FILE: str = "AISim.tcss"
-    REPLAY_DB: str = "replay_mem.db"

@@ -15,4 +15,5 @@ class DDef(ConstGroup):
     """Defaults"""
 
     APP_TITLE: str = "AI Snake Game Lab"
+    DOT_DB: str = ".db"
     MOVE_DELAY: float = 0.0

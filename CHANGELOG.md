@@ -8,6 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.4.7] - 2025-10-11
+
+### Changed
+- Use `tempfile` module to get a temporary file location for *SQLite3* database.
+- Use safer cleanup for *SQLite3* database.
+
+---
+
+## [0.4.6] - 2025-10-11
+
+
+### Fixed
+- Fix path issue with `ReplayMemory`'s use of SQLite.
+
+---
+
 ## [0.4.6] - 2025-10-11
 
 ### Fixed
