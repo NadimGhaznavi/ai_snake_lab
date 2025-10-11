@@ -1,29 +1,30 @@
-Button {
-    align: center middle;
+Screen {
+    layout: grid;
+    grid-size: 3 4;
+    grid-rows: 3 6 6 12;
+    grid-columns: 32 46 30;
+}
+
+#title {
+    column-span: 3;
+    width: 100%;
+    padding: 0 1;
     border: round #0c323e;
-    width: 10;
-    background: black; 
-}
+    color: #3e99af;
+    background: black;
+    text-style: bold;
+    align: center middle; }
 
-#button_box {
-    height: 6;
-}
-
-.button_row {
-    width: 32;
-}
-
-#game_board {
-    height: 22;
+#settings_box {
+    border-title-color: #5fc442;
+    border-title-style: bold;
     border: round #0c323e;
-    width: 42;
-    align: center middle;
+    padding: 0 1;
     background: black;
 }
 
 #game_box {
-    height: 24;
-    width: 46;
+    row-span: 10;
     border-title-color: #5fc442;
     border-subtitle-color: #5fc442;
     border: round #0c323e;
@@ -33,8 +34,6 @@ Button {
 }
 
 #runtime_box {
-    height: 6;
-    width: 30;
     border-title-color: #5fc442;
     border-title-style: bold;
     border: round #0c323e;
@@ -42,34 +41,21 @@ Button {
     background: black;
 }
 
-#score {
-    height: 3;
+
+Button {
+    align: center middle;
     border: round #0c323e;
-    width: 42;
-    padding: 0 1;
-    color: #5fc442;
+    width: 10;
+    background: black; 
+}
+
+#game_board {
+    border: round #0c323e;
+    align: center middle;
     background: black;
 }
 
-#settings_box {
-    height: 6;
-    width: 32;
-    border-title-color: #5fc442;
-    border-title-style: bold;
-    border: round #0c323e;
-    padding: 0 1;
-    background: black;
-}
 
-#title {
-    height: 3;
-    width: 108;
-    padding: 0 1;
-    border: round #0c323e;
-    color: #3e99af;
-    background: black;
-    text-style: bold;
-    align: center middle; }
 
 #button_defaults {
     color: #3e99af;

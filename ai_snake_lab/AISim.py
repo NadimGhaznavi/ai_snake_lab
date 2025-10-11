@@ -117,74 +117,69 @@ class AISim(App):
     def compose(self) -> ComposeResult:
         """Create child widgets for the app."""
         yield Label(DDef.APP_TITLE, id=DLayout.TITLE)
-        yield Horizontal(
-            Vertical(
-                Vertical(
-                    Horizontal(
-                        Label(
-                            f"{DLabel.EPSILON_INITIAL}",
-                            classes=DLayout.LABEL_SETTINGS,
-                        ),
-                        self.initial_epsilon_input,
-                    ),
-                    Horizontal(
-                        Label(
-                            f"{DLabel.EPSILON_DECAY}",
-                            classes=DLayout.LABEL_SETTINGS,
-                        ),
-                        self.epsilon_decay_input,
-                    ),
-                    Horizontal(
-                        Label(f"{DLabel.EPSILON_MIN}", classes=DLayout.LABEL_SETTINGS),
-                        self.epsilon_min_input,
-                    ),
-                    Horizontal(
-                        Label(
-                            f"{DLabel.MOVE_DELAY}",
-                            classes=DLayout.LABEL_SETTINGS,
-                        ),
-                        self.move_delay_input,
-                    ),
-                    id=DLayout.SETTINGS_BOX,
+        yield Vertical(
+            Horizontal(
+                Label(
+                    f"{DLabel.EPSILON_INITIAL}",
+                    classes=DLayout.LABEL_SETTINGS,
                 ),
-                Vertical(
-                    Horizontal(
-                        self.start_button,
-                        self.pause_button,
-                        self.quit_button,
-                        classes=DLayout.BUTTON_ROW,
-                    ),
-                    Horizontal(
-                        self.defaults_button,
-                        self.update_button,
-                        self.restart_button,
-                        classes=DLayout.BUTTON_ROW,
-                    ),
-                    id=DLayout.BUTTON_BOX,
-                ),
+                self.initial_epsilon_input,
             ),
-            Vertical(
-                self.game_board,
-                id=DLayout.GAME_BOX,
+            Horizontal(
+                Label(
+                    f"{DLabel.EPSILON_DECAY}",
+                    classes=DLayout.LABEL_SETTINGS,
+                ),
+                self.epsilon_decay_input,
             ),
-            Vertical(
-                Horizontal(
-                    Label(f"{DLabel.EPSILON}", classes=DLayout.LABEL),
-                    self.cur_epsilon_widget,
+            Horizontal(
+                Label(f"{DLabel.EPSILON_MIN}", classes=DLayout.LABEL_SETTINGS),
+                self.epsilon_min_input,
+            ),
+            Horizontal(
+                Label(
+                    f"{DLabel.MOVE_DELAY}",
+                    classes=DLayout.LABEL_SETTINGS,
                 ),
-                Horizontal(
-                    Label(f"{DLabel.MEM_TYPE}", classes=DLayout.LABEL),
-                    self.cur_mem_type_widget,
-                ),
-                Horizontal(
-                    Label(f"{DLabel.STORED_GAMES}", classes=DLayout.LABEL),
-                    self.cur_num_games_widget,
-                ),
-                Horizontal(
-                    Label(f"{DLabel.MODEL_TYPE}", classes=DLayout.LABEL),
-                    self.cur_model_type_widget,
-                ),
-                id=DLayout.RUNTIME_BOX,
+                self.move_delay_input,
+            ),
+            id=DLayout.SETTINGS_BOX,
+        )
+        yield Vertical(
+            self.game_board,
+            id=DLayout.GAME_BOX,
+        )
+        yield Vertical(
+            Horizontal(
+                Label(f"{DLabel.EPSILON}", classes=DLayout.LABEL),
+                self.cur_epsilon_widget,
+            ),
+            Horizontal(
+                Label(f"{DLabel.MEM_TYPE}", classes=DLayout.LABEL),
+                self.cur_mem_type_widget,
+            ),
+            Horizontal(
+                Label(f"{DLabel.STORED_GAMES}", classes=DLayout.LABEL),
+                self.cur_num_games_widget,
+            ),
+            Horizontal(
+                Label(f"{DLabel.MODEL_TYPE}", classes=DLayout.LABEL),
+                self.cur_model_type_widget,
+            ),
+            id=DLayout.RUNTIME_BOX,
+        )
+        yield Vertical(
+            Horizontal(
+                self.start_button,
+                self.pause_button,
+                self.quit_button,
+                classes=DLayout.BUTTON_ROW,
+            ),
+            Horizontal(
+                self.defaults_button,
+                self.update_button,
+                self.restart_button,
+                classes=DLayout.BUTTON_ROW,
             ),
         )
 
