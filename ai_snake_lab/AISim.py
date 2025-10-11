@@ -11,6 +11,7 @@ AISim.py
 import threading
 import time
 import sys, os
+from datetime import datetime, timedelta
 
 from textual.app import App, ComposeResult
 from textual.widgets import Label, Input, Button, Static
@@ -25,6 +26,7 @@ from ai_snake_lab.constants.DLayout import DLayout
 from ai_snake_lab.constants.DLabels import DLabel
 from ai_snake_lab.constants.DReplayMemory import MEM_TYPE
 from ai_snake_lab.constants.DDir import DDir
+from ai_snake_lab.constants.DDb4EPlot import Plot
 
 
 from ai_snake_lab.ai.AIAgent import AIAgent
@@ -53,6 +55,8 @@ class AISim(App):
     cur_move_delay = DDef.MOVE_DELAY
     # Number of stored games in the ReplayMemory
     cur_num_games_widget = Label("N/A", id=DLayout.NUM_GAMES)
+    # Elapsed time
+    cur_runtime_widget = Label("N/A", id=DLayout.RUNTIME)
 
     # Intial Settings for Epsilon
     initial_epsilon_input = Input(
@@ -100,7 +104,9 @@ class AISim(App):
         }
     }
 
-    game_score_plot = Db4EPlot(title=DLabel.GAME_SCORE, id=DLayout.GAME_SCORE_PLOT)
+    game_score_plot = Db4EPlot(
+        title=DLabel.GAME_SCORE, id=DLayout.GAME_SCORE_PLOT, thin_method=Plot.SLIDING
+    )
 
     def __init__(self) -> None:
         super().__init__()
@@ -127,7 +133,11 @@ class AISim(App):
 
     def compose(self) -> ComposeResult:
         """Create child widgets for the app."""
+
+        # Title bar
         yield Label(DDef.APP_TITLE, id=DLayout.TITLE)
+
+        # Configuration Settings
         yield Vertical(
             Horizontal(
                 Label(
@@ -156,10 +166,14 @@ class AISim(App):
             ),
             id=DLayout.SETTINGS_BOX,
         )
+
+        # The Snake Game
         yield Vertical(
             self.game_board,
             id=DLayout.GAME_BOX,
         )
+
+        # Runtime values
         yield Vertical(
             Horizontal(
                 Label(f"{DLabel.EPSILON}", classes=DLayout.LABEL),
@@ -177,8 +191,14 @@ class AISim(App):
                 Label(f"{DLabel.MODEL_TYPE}", classes=DLayout.LABEL),
                 self.cur_model_type_widget,
             ),
+            Horizontal(
+                Label(f"{DLabel.RUNTIME}", classes=DLayout.LABEL),
+                self.cur_runtime_widget,
+            ),
             id=DLayout.RUNTIME_BOX,
         )
+
+        # Buttons
         yield Vertical(
             Horizontal(
                 self.start_button,
@@ -193,9 +213,13 @@ class AISim(App):
                 classes=DLayout.BUTTON_ROW,
             ),
         )
+
+        # Empty fillers
         yield Static(id=DLayout.FILLER_1)
         yield Static(id=DLayout.FILLER_2)
         yield Static(id=DLayout.FILLER_3)
+
+        # The game score plot
         yield self.game_score_plot
 
     def on_mount(self):
@@ -206,7 +230,7 @@ class AISim(App):
         settings_box = self.query_one(f"#{DLayout.SETTINGS_BOX}", Vertical)
         settings_box.border_title = DLabel.SETTINGS
         runtime_box = self.query_one(f"#{DLayout.RUNTIME_BOX}", Vertical)
-        runtime_box.border_title = DLabel.RUNTIME
+        runtime_box.border_title = DLabel.RUNTIME_VALUES
         self.cur_mem_type_widget.update(
             MEM_TYPE.MEM_TYPE_TABLE[self.agent.memory.mem_type()]
         )
@@ -300,6 +324,7 @@ class AISim(App):
         self.epoch = 1
         game_box = self.query_one(f"#{DLayout.GAME_BOX}", Vertical)
         game_box.border_title = f"{DLabel.GAME} #{self.epoch}"
+        start_time = datetime.now()
 
         while not self.stop_event.is_set():
             if self.pause_event.is_set():
@@ -346,15 +371,33 @@ class AISim(App):
                 self.stats[DField.GAME_SCORE][DField.GAME_NUM].append(self.epoch)
                 self.stats[DField.GAME_SCORE][DField.GAME_SCORE].append(score)
                 # Update the plot object
-                self.game_score_plot.load_data(
-                    self.stats[DField.GAME_SCORE][DField.GAME_NUM],
-                    self.stats[DField.GAME_SCORE][DField.GAME_SCORE],
-                    DLabel.GAMES,
-                )
+                self.game_score_plot.add_data(self.epoch, score)
                 self.game_score_plot.db4e_plot()
+                # Update the runtime widget
+                elapsed_secs = (datetime.now() - start_time).total_seconds()
+                runtime = minutes_to_uptime(elapsed_secs)
+                self.cur_runtime_widget.update(runtime)
 
     def start_thread(self):
         self.simulator_thread.start()
+
+
+def minutes_to_uptime(seconds: int):
+    # Return a string like:
+    # 0h 0m 45s
+    # 1d 7h 32m
+    days, minutes = divmod(int(seconds), 86400)
+    hours, minutes = divmod(minutes, 3600)
+    minutes, seconds = divmod(minutes, 60)
+
+    if days > 0:
+        return f"{days}d {hours}h {minutes}m"
+    elif hours > 0:
+        return f"{hours}h {minutes}m"
+    elif minutes > 0:
+        return f"{minutes}m {seconds}s"
+    else:
+        return f"{seconds}s"
 
 
 if __name__ == "__main__":

@@ -46,6 +46,7 @@ class DLayout(ConstGroup):
     MOVE_DELAY: str = "move_delay"
     NUM_GAMES: str = "num_games"
     RUNTIME_BOX: str = "runtime_box"
+    RUNTIME: str = "runtime"
     SCORE: str = "score"
     SETTINGS_BOX: str = "settings_box"
     TITLE: str = "title"

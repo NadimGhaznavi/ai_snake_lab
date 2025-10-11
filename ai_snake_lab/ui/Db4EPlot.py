@@ -9,9 +9,11 @@ db4e/Modules/Db4EPlot.py
 """
 
 import math
-
+from collections import deque
 from textual_plot import PlotWidget, HiResMode
 from textual.app import ComposeResult
+
+from ai_snake_lab.constants.DDb4EPlot import Plot
 
 
 MAX_DATA_POINTS = 100
@@ -22,12 +24,17 @@ class Db4EPlot(PlotWidget):
     A widget for plotting data based on TextualPlot's PlotWidget.
     """
 
-    def __init__(self, title, id, classes=None):
+    def __init__(self, title, id, thin_method=None):
         super().__init__(title, id, allow_pan_and_zoom=False)
         self._plot_id = id
-        self._all_days = None
-        self._all_values = None
         self._title = title
+        self._thin_method = thin_method
+        if thin_method == Plot.SLIDING:
+            self._all_days = deque(maxlen=MAX_DATA_POINTS)
+            self._all_values = deque(maxlen=MAX_DATA_POINTS)
+        else:
+            self._all_days = None
+            self._all_values = None
 
     def compose(self) -> ComposeResult:
         yield PlotWidget()
@@ -39,6 +46,10 @@ class Db4EPlot(PlotWidget):
             self.set_ylabel(self._title + " (" + units + ")")
         else:
             self.set_ylabel(self._title)
+
+    def add_data(self, day, value):
+        self._all_days.append(day)
+        self._all_values.append(value)
 
     def set_xlabel(self, label):
         return super().set_xlabel(label)
@@ -53,7 +64,11 @@ class Db4EPlot(PlotWidget):
         self.clear()
         if len(plot_days) == 0:
             return
-        reduced_days, reduced_values = self.reduce_data(plot_days, plot_values)
+        if self._thin_method == Plot.AVERAGE:
+            reduced_days, reduced_values = self.reduce_data(plot_days, plot_values)
+        else:
+            reduced_days, reduced_values = list(self._all_days), list(self._all_values)
+
         self.plot(
             x=reduced_days,
             y=reduced_values,
