@@ -10,10 +10,6 @@ constants/DGameBoard.py
 
 from ai_snake_lab.utils.ConstGroup import ConstGroup
 
-from ai_snake_lab.constants.DLabels import DLabel
-from ai_snake_lab.constants.DModelL import DModelL
-from ai_snake_lab.constants.DModelLRNN import DModelRNN
-
 
 class DSim(ConstGroup):
     """Simulation Constants"""
@@ -38,16 +34,3 @@ class DSim(ConstGroup):
     # Stats dictionary keys
     GAME_SCORE: str = "game_score"
     GAME_NUM: str = "game_num"
-
-    # A list of tuples, for the TUI's model selection drop down menu (Select widget).
-    MODEL_TYPES: list = [
-        (DLabel.LINEAR_MODEL.value, DModelL.MODEL.value),
-        (DLabel.RNN_MODEL.value, DModelRNN.MODEL.value),
-    ]
-
-    # A dictionary of model_field to model_name values, for the TUI's runtime model
-    # widget (Label widget).
-    MODEL_TYPE: dict = {
-        DModelL.MODEL.value: DLabel.LINEAR_MODEL.value,
-        DModelRNN.MODEL.value: DLabel.RNN_MODEL.value,
-    }

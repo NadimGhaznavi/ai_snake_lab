@@ -38,3 +38,4 @@ class MEM(ConstGroup):
     """Replay memory constants"""
 
     MIN_GAMES: int = 20
+    NO_DATA: int = -1

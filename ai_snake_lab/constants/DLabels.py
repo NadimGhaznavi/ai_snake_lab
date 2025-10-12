@@ -8,12 +8,7 @@ constants/DLabels.py
     License: GPL 3.0
 """
 
-from ai_snake_lab.ai.models.ModelL import ModelL
-from ai_snake_lab.ai.models.ModelRNN import ModelRNN
-
 from ai_snake_lab.utils.ConstGroup import ConstGroup
-from ai_snake_lab.constants.DModelL import DModelL
-from ai_snake_lab.constants.DModelLRNN import DModelRNN
 
 
 class DLabel(ConstGroup):
@@ -50,5 +45,6 @@ class DLabel(ConstGroup):
     SETTINGS: str = "Configuration Settings"
     START: str = "Start"
     STORED_GAMES: str = "Stored Games"
+    TRAINING_GAME_ID: str = "Training Game ID"
     RESTART: str = "Restart"
     UPDATE: str = "Update"

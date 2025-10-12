@@ -26,6 +26,7 @@ class DLayout(ConstGroup):
     CUR_MEM_TYPE: str = "cur_mem_type"
     CUR_MODEL_TYPE: str = "cur_model_type"
     CUR_MOVE_DELAY: str = "cur_move_delay"
+    CUR_TRAINING_GAME_ID: str = "cur_training_game_id"
     FILLER_1: str = "filler_1"
     FILLER_2: str = "filler_2"
     FILLER_3: str = "filler_3"
