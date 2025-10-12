@@ -60,28 +60,22 @@ class AIAgent:
     def played_game(self, score):
         self.epsilon_algo.played_game()
 
-    def remember(self, state, action, reward, next_state, done):
+    def remember(self, state, action, reward, next_state, done, score=None):
         # Store the state, action, reward, next_state, and done in memory
-        self.memory.append((state, action, reward, next_state, done))
+        self.memory.append((state, action, reward, next_state, done, score))
 
     def set_optimizer(self, optimizer):
         self.trainer.set_optimizer(optimizer)
 
     def train_long_memory(self):
-        # Train on 5 games
-        max_games = 2
-        # Get a random full game
-        while max_games > 0:
-            max_games -= 1
-            game = self.memory.get_random_game()
-            if not game:
-                return  # no games to train on yet
+        # Ask ReplayMemory for data
+        training_data = self.memory.get_training_data(n_games=1)
+        if not training_data:
+            return  # either no memory or user chose None
 
-            for count, (state, action, reward, next_state, done) in enumerate(
-                game, start=1
-            ):
-                # print(f"Move #{count}: {action}")
-                self.trainer.train_step(state, action, reward, next_state, [done])
+        for state, action, reward, next_state, done, *_ in training_data:
+            self.trainer.train_step(state, action, reward, next_state, [done])
 
     def train_short_memory(self, state, action, reward, next_state, done):
+        # Always train on the current frame
         self.trainer.train_step(state, action, reward, next_state, [done])

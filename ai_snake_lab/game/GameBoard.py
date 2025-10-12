@@ -82,6 +82,123 @@ class GameBoard(ScrollView):
         return out_list
 
     def get_state(self):
+        head = self.snake_head
+        direction = self.direction
+
+        # Adjacent points
+        point_l = Offset(head.x - 1, head.y)
+        point_r = Offset(head.x + 1, head.y)
+        point_u = Offset(head.x, head.y - 1)
+        point_d = Offset(head.x, head.y + 1)
+
+        # Direction flags
+        dir_l = direction == Direction.LEFT
+        dir_r = direction == Direction.RIGHT
+        dir_u = direction == Direction.UP
+        dir_d = direction == Direction.DOWN
+
+        # Length encoded in 7-bit binary
+        slb = self.get_binary(7, len(self.snake_body))
+
+        # Normalized distances to walls (0=touching, 1=center)
+        width = height = self.board_size()
+        dist_left = head.x / width
+        dist_right = (width - head.x - 1) / width
+        dist_up = head.y / height
+        dist_down = (height - head.y - 1) / height
+
+        # Relative food direction (normalized)
+        dx = self.food.x - head.x
+        dy = self.food.y - head.y
+        food_dx = dx / max(1, width)
+        food_dy = dy / max(1, height)
+
+        # Free space straight ahead
+        free_ahead = 0
+        probe = Offset(head.x, head.y)
+        while (
+            0 <= probe.x < width
+            and 0 <= probe.y < height
+            and not self.is_snake_collision(probe)
+        ):
+            free_ahead += 1
+            if dir_r:
+                probe = Offset(probe.x + 1, probe.y)
+            elif dir_l:
+                probe = Offset(probe.x - 1, probe.y)
+            elif dir_u:
+                probe = Offset(probe.x, probe.y - 1)
+            elif dir_d:
+                probe = Offset(probe.x, probe.y + 1)
+        free_ahead = free_ahead / max(width, height)  # normalize
+
+        # Local free cell count (0–4)
+        adjacent_points = [point_l, point_r, point_u, point_d]
+        local_free = (
+            sum(
+                1
+                for p in adjacent_points
+                if not self.is_wall_collision(p) and not self.is_snake_collision(p)
+            )
+            / 4.0
+        )
+
+        # Optional context (if tracked elsewhere)
+        recent_growth = getattr(self, "recent_growth", 0.0)
+        time_since_food = getattr(self, "steps_since_food", 0.0) / 100.0  # normalize
+
+        # --- EXISTING FEATURES ---
+        state = [
+            # 1-3. Snake collision directions
+            (dir_r and self.is_snake_collision(point_r))
+            or (dir_l and self.is_snake_collision(point_l))
+            or (dir_u and self.is_snake_collision(point_u))
+            or (dir_d and self.is_snake_collision(point_d)),
+            (dir_u and self.is_snake_collision(point_r))
+            or (dir_d and self.is_snake_collision(point_l))
+            or (dir_l and self.is_snake_collision(point_u))
+            or (dir_r and self.is_snake_collision(point_d)),
+            (dir_d and self.is_snake_collision(point_r))
+            or (dir_u and self.is_snake_collision(point_l))
+            or (dir_r and self.is_snake_collision(point_u))
+            or (dir_l and self.is_snake_collision(point_d)),
+            # 4-6. Wall collision directions
+            (dir_r and self.is_wall_collision(point_r))
+            or (dir_l and self.is_wall_collision(point_l))
+            or (dir_u and self.is_wall_collision(point_u))
+            or (dir_d and self.is_wall_collision(point_d)),
+            (dir_u and self.is_wall_collision(point_r))
+            or (dir_d and self.is_wall_collision(point_l))
+            or (dir_l and self.is_wall_collision(point_u))
+            or (dir_r and self.is_wall_collision(point_d)),
+            (dir_d and self.is_wall_collision(point_r))
+            or (dir_u and self.is_wall_collision(point_l))
+            or (dir_r and self.is_wall_collision(point_u))
+            or (dir_l and self.is_wall_collision(point_d)),
+            # 7-10. Direction flags
+            dir_l,
+            dir_r,
+            dir_u,
+            dir_d,
+            # 11-14. Food relative direction
+            food_dx,
+            food_dy,
+            # 15-21. Snake length bits
+            *slb,
+            # 22-26. Distances
+            dist_left,
+            dist_right,
+            dist_up,
+            dist_down,
+            free_ahead,
+            local_free,
+            recent_growth,
+            time_since_food,
+        ]
+
+        return [float(x) for x in state]
+
+    def get_state2(self):
 
         head = self.snake_head
         direction = self.direction

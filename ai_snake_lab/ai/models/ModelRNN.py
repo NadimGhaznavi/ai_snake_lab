@@ -12,16 +12,19 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from ai_snake_lab.constants.DSim import DSim
+from ai_snake_lab.constants.DModelLRNN import DModelRNN
+
 
 class ModelRNN(nn.Module):
     def __init__(self, seed: int):
         super(ModelRNN, self).__init__()
         torch.manual_seed(seed)
-        input_size = 30
-        hidden_size = 200
-        output_size = 3
-        rnn_layers = 4
-        rnn_dropout = 0.2
+        input_size = DSim.STATE_SIZE
+        hidden_size = DModelRNN.HIDDEN_SIZE
+        output_size = DSim.OUTPUT_SIZE
+        rnn_layers = DModelRNN.RNN_LAYERS
+        rnn_dropout = DModelRNN.RNN_DROPOUT
         self.m_in = nn.Sequential(
             nn.Linear(input_size, hidden_size),
             nn.ReLU(),
@@ -37,7 +40,7 @@ class ModelRNN(nn.Module):
 
     def forward(self, x):
         x = self.m_in(x)
-        inputs = x.view(1, -1, 200)
+        inputs = x.view(1, -1, DModelRNN.HIDDEN_SIZE)
         x, h_n = self.m_rnn(inputs)
         x = self.m_out(x)
         return x[len(x) - 1]

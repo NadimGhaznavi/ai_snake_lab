@@ -14,12 +14,21 @@ from ai_snake_lab.utils.ConstGroup import ConstGroup
 class MEM_TYPE(ConstGroup):
     """Replay Memory Type"""
 
-    SHUFFLE: str = "shuffle"
-    SHUFFLE_LABEL: str = "Shuffled set"
+    NONE: str = "none"
+    NONE_LABEL: str = "None"
     RANDOM_GAME: str = "random_game"
-    RANDOM_GAME_LABEL: str = "Random game"
+    RANDOM_GAME_LABEL: str = "Random Game"
+    SHUFFLE: str = "shuffle"
+    SHUFFLE_LABEL: str = "Random Frames"
 
     MEM_TYPE_TABLE: dict = {
-        SHUFFLE: SHUFFLE_LABEL,
+        NONE: NONE_LABEL,
         RANDOM_GAME: RANDOM_GAME_LABEL,
+        SHUFFLE: SHUFFLE_LABEL,
     }
+
+    MEMORY_TYPES: list = [
+        (NONE_LABEL, NONE),
+        (RANDOM_GAME_LABEL, RANDOM_GAME),
+        (SHUFFLE_LABEL, SHUFFLE),
+    ]

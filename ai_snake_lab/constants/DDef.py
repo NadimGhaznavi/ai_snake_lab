@@ -14,6 +14,6 @@ from ai_snake_lab.utils.ConstGroup import ConstGroup
 class DDef(ConstGroup):
     """Defaults"""
 
-    APP_TITLE: str = "AI Snake Game Lab"
+    APP_TITLE: str = "AI Snake Lab"
     DOT_DB: str = ".db"
     MOVE_DELAY: float = 0.0

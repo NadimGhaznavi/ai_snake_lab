@@ -14,9 +14,8 @@ import sys, os
 from datetime import datetime, timedelta
 
 from textual.app import App, ComposeResult
-from textual.widgets import Label, Input, Button, Static
+from textual.widgets import Label, Input, Button, Static, Log, Select
 from textual.containers import Vertical, Horizontal
-from textual.reactive import var
 from textual.theme import Theme
 
 from ai_snake_lab.constants.DDef import DDef
@@ -32,9 +31,12 @@ from ai_snake_lab.constants.DDb4EPlot import Plot
 
 from ai_snake_lab.ai.AIAgent import AIAgent
 from ai_snake_lab.ai.EpsilonAlgo import EpsilonAlgo
+
 from ai_snake_lab.game.GameBoard import GameBoard
 from ai_snake_lab.game.SnakeGame import SnakeGame
+
 from ai_snake_lab.ui.Db4EPlot import Db4EPlot
+
 
 RANDOM_SEED = 1970
 
@@ -67,17 +69,15 @@ class AISim(App):
 
     ## Runtime values
     # Current epsilon value (degrades in real-time)
-    cur_epsilon_widget = Label("N/A", id=DLayout.CUR_EPSILON)
-    # Current memory type
-    cur_mem_type_widget = Label("N/A", id=DLayout.CUR_MEM_TYPE)
+    cur_epsilon_widget = Label(DLabel.N_SLASH_A, id=DLayout.CUR_EPSILON)
     # Current model type
-    cur_model_type_widget = Label("N/A", id=DLayout.CUR_MODEL_TYPE)
+    cur_model_type_widget = Label(DLabel.N_SLASH_A, id=DLayout.CUR_MODEL_TYPE)
     # Time delay between moves
     cur_move_delay = DDef.MOVE_DELAY
     # Number of stored games in the ReplayMemory
-    cur_num_games_widget = Label("N/A", id=DLayout.NUM_GAMES)
+    cur_num_games_widget = Label(DLabel.N_SLASH_A, id=DLayout.NUM_GAMES)
     # Elapsed time
-    cur_runtime_widget = Label("N/A", id=DLayout.RUNTIME)
+    cur_runtime_widget = Label(DLabel.N_SLASH_A, id=DLayout.RUNTIME)
 
     # Intial Settings for Epsilon
     initial_epsilon_input = Input(
@@ -185,6 +185,13 @@ class AISim(App):
                 ),
                 self.move_delay_input,
             ),
+            Horizontal(
+                Label(
+                    f"{DLabel.MEM_TYPE}",
+                    classes=DLayout.LABEL_SETTINGS_12,
+                ),
+                Select(MEM_TYPE.MEMORY_TYPES, compact=True, id=DLayout.MEM_TYPE),
+            ),
             id=DLayout.SETTINGS_BOX,
         )
 
@@ -202,7 +209,7 @@ class AISim(App):
             ),
             Horizontal(
                 Label(f"{DLabel.MEM_TYPE}", classes=DLayout.LABEL),
-                self.cur_mem_type_widget,
+                Label(DLabel.N_SLASH_A, id=DLayout.CUR_MEM_TYPE),
             ),
             Horizontal(
                 Label(f"{DLabel.STORED_GAMES}", classes=DLayout.LABEL),
@@ -236,7 +243,11 @@ class AISim(App):
         )
 
         # Empty fillers
-        yield Static(id=DLayout.FILLER_1)
+        yield Vertical(
+            Static(id=DLayout.HIGHSCORES_HEADER),
+            Log(highlight=False, auto_scroll=True, id=DLayout.HIGHSCORES),
+            id=DLayout.HIGHSCORES_BOX,
+        )
         yield Static(id=DLayout.FILLER_2)
         yield Static(id=DLayout.FILLER_3)
 
@@ -252,10 +263,14 @@ class AISim(App):
         settings_box.border_title = DLabel.SETTINGS
         runtime_box = self.query_one(f"#{DLayout.RUNTIME_BOX}", Vertical)
         runtime_box.border_title = DLabel.RUNTIME_VALUES
-        self.cur_mem_type_widget.update(
-            MEM_TYPE.MEM_TYPE_TABLE[self.agent.memory.mem_type()]
-        )
-        self.cur_num_games_widget.update(str(self.agent.memory.get_num_games()))
+        highscore_box = self.query_one(f"#{DLayout.HIGHSCORES_BOX}", Vertical)
+        highscore_box.border_title = DLabel.HIGHSCORES
+        cur_mem_type_widget = self.query_one(f"#{DLayout.CUR_MEM_TYPE}", Label)
+        cur_mem_type_widget.update(DLabel.N_SLASH_A)
+        highscores_header = self.query_one(f"#{DLayout.HIGHSCORES_HEADER}", Static)
+        highscores_header.update(f"   [b #3e99af]{DLabel.GAME:6s}{DLabel.SCORE:6s}[/]")
+        memory_type_widget = self.query_one(f"#{DLayout.MEM_TYPE}")
+        memory_type_widget.value = MEM_TYPE.RANDOM_GAME
         # Initial state is that the app is stopped
         self.add_class(DField.STOPPED)
         # Register the theme
@@ -305,6 +320,8 @@ class AISim(App):
             game_box = self.query_one(f"#{DLayout.GAME_BOX}", Vertical)
             game_box.border_title = ""
             game_box.border_subtitle = ""
+            highscores = self.query_one(f"#{DLayout.HIGHSCORES}", Log)
+            highscores.clear()
 
             # Recreate events and get a new thread
             self.stop_event = threading.Event()
@@ -324,13 +341,21 @@ class AISim(App):
             self.remove_class(DField.PAUSED)
             self.cur_move_delay = float(self.move_delay_input.value)
             self.cur_model_type_widget.update(self.agent.model_type())
+            memory_type_widget = self.query_one(f"#{DLayout.MEM_TYPE}")
+            self.agent.memory.mem_type(memory_type_widget.value)
+            cur_mem_type_widget = self.query_one(f"#{DLayout.CUR_MEM_TYPE}", Label)
+            cur_mem_type_widget.update(
+                MEM_TYPE.MEM_TYPE_TABLE[memory_type_widget.value]
+            )
 
-        # Reset button was pressed
+        # Defaults button was pressed
         elif button_id == DLayout.BUTTON_DEFAULTS:
             self.initial_epsilon_input.value = str(DEpsilon.EPSILON_INITIAL)
             self.epsilon_decay_input.value = str(DEpsilon.EPSILON_DECAY)
             self.epsilon_min_input.value = str(DEpsilon.EPSILON_MIN)
             self.move_delay_input.value = str(DDef.MOVE_DELAY)
+            memory_type_widget = self.query_one(f"#{DLayout.MEM_TYPE}")
+            memory_type_widget.value = MEM_TYPE.RANDOM_GAME
 
         # Quit button was pressed
         elif button_id == DLayout.BUTTON_QUIT:
@@ -339,6 +364,8 @@ class AISim(App):
         # Update button was pressed
         elif button_id == DLayout.BUTTON_UPDATE:
             self.cur_move_delay = float(self.move_delay_input.value)
+            memory_type_widget = self.query_one(f"#{DLayout.MEM_TYPE}")
+            self.agent.memory.mem_type(memory_type_widget.value)
 
     def start_sim(self):
         self.snake_game.reset()
@@ -351,6 +378,8 @@ class AISim(App):
         game_box = self.query_one(f"#{DLayout.GAME_BOX}", Vertical)
         game_box.border_title = f"{DLabel.GAME} #{self.epoch}"
         start_time = datetime.now()
+        self.cur_num_games_widget.update(str(self.agent.memory.get_num_games()))
+        highscores = self.query_one(f"#{DLayout.HIGHSCORES}", Log)
 
         while not self.stop_event.is_set():
             if self.pause_event.is_set():
@@ -363,6 +392,8 @@ class AISim(App):
             reward, game_over, score = snake_game.play_step(move)
             if score > highscore:
                 highscore = score
+                # Update the UI
+                highscores.write_line(f"{self.epoch:6d} {score:6d}")
             game_box.border_subtitle = (
                 f"{DLabel.HIGHSCORE}: {highscore}, {DLabel.SCORE}: {score}"
             )
@@ -378,7 +409,9 @@ class AISim(App):
                 game_box = self.query_one(f"#{DLayout.GAME_BOX}", Vertical)
                 game_box.border_title = f"{DLabel.GAME} #{self.epoch}"
                 # Remember the last move
-                agent.remember(old_state, move, reward, new_state, game_over)
+                agent.remember(
+                    old_state, move, reward, new_state, game_over, score=score
+                )
                 # Train long memory
                 agent.train_long_memory()
                 # Reset the game

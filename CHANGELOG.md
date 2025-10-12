@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+---
+
+## [Unreleased]
+
+### Added
+- Added a highscores widget showing the game number and the high score.
+- Reworked the state map in `GameBoard:get_state()`
+- Moved the `ModelRNN` model parameters into the `DModelRNN` constants file.
+- Updated the *SQLite* schema used by the `ReplayMemory` class.
+  - See https://snakelab.osoyalce.com/db_schema.html
+- Added drop down menu to select the `ReplayMemory` type i.e. *Random Game*, *Random Frames* or *None*.
+    - Added a runtime widget to display the current memory type
+- Added sections to the website / README file.
+- Added a [Richard Sutton](https://snakelab.osoyalce.com//richart_sutton.html) page.
 
 ---
 

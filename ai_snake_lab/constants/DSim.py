@@ -15,6 +15,6 @@ class DSim(ConstGroup):
     """Simulation Constants"""
 
     # Size of the statemap, this is from the GameBoard class
-    STATE_SIZE: int = 30
+    STATE_SIZE: int = 27
     # The number of "choices" the snake has: go forward, left or right.
     OUTPUT_SIZE: int = 3

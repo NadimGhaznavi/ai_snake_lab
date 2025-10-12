@@ -15,6 +15,6 @@ class DModelRNN(ConstGroup):
     """RNN Model Defaults"""
 
     LEARNING_RATE: float = 0.0007
-    INPUT_SIZE: int = 400
-    MAX_MEMORIES: int = 20
-    MAX_MEMORY: int = 100000
+    HIDDEN_SIZE: int = 200
+    RNN_LAYERS: int = 4
+    RNN_DROPOUT: float = 0.2

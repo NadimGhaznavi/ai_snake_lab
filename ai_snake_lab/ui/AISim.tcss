@@ -2,7 +2,7 @@ Screen {
     layout: grid;
     grid-size: 3 4;
     grid-rows: 3 7 6 11 10;
-    grid-columns: 32 46 30;
+    grid-columns: 32 46 32;
 }
 
 #title {
@@ -34,6 +34,7 @@ Screen {
 }
 
 #runtime_box {
+    height: 100%;
     border-title-color: #5fc442;
     border-title-style: bold;
     border: round #0c323e;
@@ -41,7 +42,14 @@ Screen {
     background: black;
 }
 
-#filler_1 {
+#highscores_box {
+    row-span: 2;
+    border-title-color: #5fc442;
+    border-title-style: bold;
+    border: round #0c323e;
+    padding: 0 1;
+    background: black;
+
 }
 
 #filler_2 {
@@ -54,7 +62,7 @@ Screen {
     dock: bottom;
     border: round #0c323e;
     height: 15;
-    width: 108;
+    width: 110;
     background: black
 }
 
@@ -119,6 +127,11 @@ Button {
 .label_settings {
     color: #5fc442;
     width: 18;
+}
+
+.label_settings_12 {
+    color: #5fc442;
+    width: 12;
 }
 
 .paused #button_pause {

@@ -11,11 +11,9 @@ This file contains the ReplayMemory class.
 """
 
 import os
-from collections import deque
 import random
 import sqlite3, pickle
 import tempfile
-import shutil
 
 from ai_snake_lab.constants.DReplayMemory import MEM_TYPE
 from ai_snake_lab.constants.DDef import DDef
@@ -26,21 +24,12 @@ class ReplayMemory:
     def __init__(self, seed: int):
         random.seed(seed)
         self.batch_size = 250
-        # Valid options: shuffle, random_game, targeted_score, random_targeted_score
+        # Valid options: shuffle, random_game or none
         self._mem_type = MEM_TYPE.RANDOM_GAME
         self.min_games = 1
-        self.max_states = 15000
-        self.max_shuffle_games = 40
-        self.max_games = 500
 
-        if self._mem_type == MEM_TYPE.SHUFFLE:
-            # States are stored in a deque and a random sample will be returned
-            self.memories = deque(maxlen=self.max_states)
-
-        elif self._mem_type == MEM_TYPE.RANDOM_GAME:
-            # All of the states for a game are stored, in order, in a deque.
-            # A complete game will be returned
-            self.cur_memory = []
+        # All of the states for a game are stored, in order.
+        self.cur_memory = []
 
         # Get a temporary directory for the DB file
         self._tmpfile = tempfile.NamedTemporaryFile(suffix=DDef.DOT_DB, delete=False)
@@ -70,22 +59,45 @@ class ReplayMemory:
         except Exception:
             pass  # avoid errors on interpreter shutdown
 
-    def append(self, transition):
+    def append(self, transition, final_score=None):
         """Add a transition to the current game."""
-        if self._mem_type != MEM_TYPE.RANDOM_GAME:
-            raise NotImplementedError(
-                "Only RANDOM_GAME memory type is implemented for SQLite backend"
-            )
+        old_state, move, reward, new_state, done, final_score = transition
 
-        self.cur_memory.append(transition)
-        _, _, _, _, done = transition
+        self.cur_memory.append((old_state, move, reward, new_state, done))
 
         if done:
-            # Serialize the full game to JSON
-            serialized = pickle.dumps(self.cur_memory)
+            if final_score is None:
+                raise ValueError("final_score must be provided when the game ends")
+
+            total_frames = len(self.cur_memory)
+
+            # Record the game
             self.cursor.execute(
-                "INSERT INTO games (transitions) VALUES (?)", (serialized,)
+                "INSERT INTO games (score, total_frames) VALUES (?, ?)",
+                (final_score, total_frames),
             )
+            game_id = self.cursor.lastrowid
+
+            # Record the frames
+            for i, (state, action, reward, next_state, done) in enumerate(
+                self.cur_memory
+            ):
+                self.cursor.execute(
+                    """
+                    INSERT INTO frames (game_id, frame_index, state, action, reward, next_state, done)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        game_id,
+                        i,
+                        pickle.dumps(state),
+                        pickle.dumps(action),
+                        reward,
+                        pickle.dumps(next_state),
+                        done,
+                    ),
+                )
+
             self.conn.commit()
             self.cur_memory = []
 
@@ -98,44 +110,138 @@ class ReplayMemory:
             os.remove(self.db_file)
             self.db_file = None
 
+    def get_average_game_length(self):
+        self.cursor.execute("SELECT AVG(total_frames) FROM games")
+        avg = self.cursor.fetchone()[0]
+        return int(avg) if avg else 0
+
+    def get_random_frames(self, n=None):
+        if n is None:
+            n = self.get_average_game_length() or 32  # fallback if no data
+
+        self.cursor.execute(
+            "SELECT state, action, reward, next_state, done "
+            "FROM frames ORDER BY RANDOM() LIMIT ?",
+            (n,),
+        )
+        rows = self.cursor.fetchall()
+
+        frames = [
+            (
+                pickle.loads(state_blob),
+                pickle.loads(action),
+                float(reward),
+                pickle.loads(next_state_blob),
+                bool(done),
+            )
+            for state_blob, action, reward, next_state_blob, done in rows
+        ]
+        return frames
+
     def get_random_game(self):
-        """Return a random full game from the database."""
         self.cursor.execute("SELECT id FROM games")
         all_ids = [row[0] for row in self.cursor.fetchall()]
-        if len(all_ids) >= self.min_games:
-            rand_id = random.choice(all_ids)
-            self.cursor.execute("SELECT transitions FROM games WHERE id=?", (rand_id,))
-            row = self.cursor.fetchone()
-            if row:
-                return pickle.loads(row[0])
-        return False
+        if not all_ids or len(all_ids) < self.min_games:
+            return False
 
-    def get_random_states(self):
-        mem_size = len(self.memories)
-        if mem_size < self.batch_size:
-            return self.memories
-        return random.sample(self.memories, self.batch_size)
+        rand_id = random.choice(all_ids)
+        self.cursor.execute(
+            "SELECT state, action, reward, next_state, done "
+            "FROM frames WHERE game_id = ? ORDER BY frame_index ASC",
+            (rand_id,),
+        )
+        rows = self.cursor.fetchall()
+        if not rows:
+            return False
 
-    def get_memory(self):
-        if self._mem_type == MEM_TYPE.SHUFFLE:
-            return self.get_random_states()
-
-        elif self._mem_type == MEM_TYPE.RANDOM_GAME:
-            return self.get_random_game()
+        game = [
+            (
+                pickle.loads(state_blob),
+                pickle.loads(action),
+                float(reward),
+                pickle.loads(next_state_blob),
+                bool(done),
+            )
+            for state_blob, action, reward, next_state_blob, done in rows
+        ]
+        return game
 
     def get_num_games(self):
         """Return number of games stored in the database."""
         self.cursor.execute("SELECT COUNT(*) FROM games")
         return self.cursor.fetchone()[0]
 
+    def get_training_data(self, n_games=None, n_frames=None):
+        """
+        Returns a list of transitions for training based on the current memory type.
+
+        - n_games: used for RANDOM_GAME (how many full games to sample)
+        - n_frames: used for SHUFFLE (how many frames to sample)
+        - Returns empty list if memory type is NONE or if database/memory is empty
+        """
+        mem_type = self.mem_type()
+
+        print(f"SELECTED memory type: {mem_type}")
+        if mem_type == MEM_TYPE.NONE:
+            return []
+
+        elif mem_type == MEM_TYPE.RANDOM_GAME:
+            n_games = n_games or 1
+            training_data = []
+            for _ in range(n_games):
+                game = self.get_random_game()
+                if game:
+                    training_data.extend(game)
+            return training_data
+
+        elif mem_type == MEM_TYPE.SHUFFLE:
+            n_frames = n_frames or self.get_average_game_length()
+            frames = self.get_random_frames(n=n_frames)
+            return frames
+
+        else:
+            raise ValueError(f"Unknown memory type: {mem_type}")
+
     def init_db(self):
         self.cursor.execute(
             """
-        CREATE TABLE IF NOT EXISTS games (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            transitions TEXT NOT NULL
+            CREATE TABLE IF NOT EXISTS games (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                score INTEGER NOT NULL,
+                total_frames INTEGER NOT NULL
+            );
+            """
         )
-        """
+        self.conn.commit()
+
+        self.cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS frames (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                game_id INTEGER NOT NULL,
+                frame_index INTEGER NOT NULL,
+                state BLOB NOT NULL,
+                action BLOB NOT NULL,      
+                reward INTEGER NOT NULL,
+                next_state BLOB NOT NULL,
+                done INTEGER NOT NULL,        -- 0 or 1
+                FOREIGN KEY (game_id) REFERENCES games(id)
+            );
+            """
+        )
+        self.conn.commit()
+
+        self.cursor.execute(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_game_frame ON frames (game_id, frame_index);
+            """
+        )
+        self.conn.commit()
+
+        self.cursor.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_frames_game_id ON frames (game_id);
+            """
         )
         self.conn.commit()
 
