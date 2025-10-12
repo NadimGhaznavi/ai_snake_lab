@@ -12,7 +12,7 @@ from ai_snake_lab.utils.ConstGroup import ConstGroup
 
 
 class DLayout(ConstGroup):
-    """Layout"""
+    """Layout fields used in the TUI"""
 
     BUTTON_BOX: str = "button_box"
     BUTTON_PAUSE: str = "button_pause"
@@ -25,6 +25,7 @@ class DLayout(ConstGroup):
     CUR_EPSILON: str = "cur_epsilon"
     CUR_MEM_TYPE: str = "cur_mem_type"
     CUR_MODEL_TYPE: str = "cur_model_type"
+    CUR_MOVE_DELAY: str = "cur_move_delay"
     FILLER_1: str = "filler_1"
     FILLER_2: str = "filler_2"
     FILLER_3: str = "filler_3"
@@ -47,12 +48,15 @@ class DLayout(ConstGroup):
     LABEL: str = "label"
     LABEL_SETTINGS: str = "label_settings"
     LABEL_SETTINGS_12: str = "label_settings_12"
+    LABEL_SETTINGS_19: str = "label_settings_19"
     MEM_TYPE: str = "memory_type"
+    MODEL_TYPE: str = "model_type"
     MOVE_DELAY: str = "move_delay"
-    NUM_GAMES: str = "num_games"
     RUNTIME_BOX: str = "runtime_box"
     RUNTIME: str = "runtime"
     SCORE: str = "score"
     SETTINGS_BOX: str = "settings_box"
+    SNAKE_LAB_THEME: str = "snake_lab_theme"
+    STORED_GAMES: str = "stored_games"
     TITLE: str = "title"
     VARIABLE: str = "variable"

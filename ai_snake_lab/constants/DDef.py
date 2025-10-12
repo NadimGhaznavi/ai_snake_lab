@@ -14,6 +14,5 @@ from ai_snake_lab.utils.ConstGroup import ConstGroup
 class DDef(ConstGroup):
     """Defaults"""
 
-    APP_TITLE: str = "AI Snake Lab"
-    DOT_DB: str = ".db"
-    MOVE_DELAY: float = 0.0
+    DOT_DB: str = ".db"  # .db files
+    MOVE_DELAY: float = 0.0  # Delay between game moves (in the training loop)

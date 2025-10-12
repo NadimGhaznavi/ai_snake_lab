@@ -12,7 +12,7 @@ from ai_snake_lab.utils.ConstGroup import ConstGroup
 
 
 class MEM_TYPE(ConstGroup):
-    """Replay Memory Type"""
+    """Replay memory constants"""
 
     NONE: str = "none"
     NONE_LABEL: str = "None"
@@ -32,3 +32,9 @@ class MEM_TYPE(ConstGroup):
         (RANDOM_GAME_LABEL, RANDOM_GAME),
         (SHUFFLE_LABEL, SHUFFLE),
     ]
+
+
+class MEM(ConstGroup):
+    """Replay memory constants"""
+
+    MIN_GAMES: int = 20

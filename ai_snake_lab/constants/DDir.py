@@ -12,7 +12,7 @@ from ai_snake_lab.utils.ConstGroup import ConstGroup
 
 
 class DDir(ConstGroup):
-    """Directories"""
+    """Directory Names"""
 
     AI_SNAKE_LAB: str = "ai_snake_lab"
     UTILS: str = "utils"

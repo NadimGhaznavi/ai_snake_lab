@@ -14,4 +14,4 @@ from ai_snake_lab.utils.ConstGroup import ConstGroup
 class DFile(ConstGroup):
     """Files"""
 
-    CSS_FILE: str = "AISim.tcss"
+    CSS_FILE: str = "AISim.tcss"  # AI Snake Lab Textual CSS file

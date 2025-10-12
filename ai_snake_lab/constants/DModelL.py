@@ -12,10 +12,9 @@ from ai_snake_lab.utils.ConstGroup import ConstGroup
 
 
 class DModelL(ConstGroup):
-    """Linear Model Defaults"""
+    """Linear Model constants"""
 
-    LEARNING_RATE: float = 0.000009
-    # The number of nodes in the hidden layer
-    HIDDEN_SIZE: int = 170
-    # The dropout value, 0.2 represents 20%
-    P_VALUE: float = 0.2
+    HIDDEN_SIZE: int = 170  # Default: The number of nodes in the hidden layer
+    LEARNING_RATE: float = 0.000009  # Default: Learning rate
+    MODEL: str = "linear"
+    P_VALUE: float = 0.2  # Default: Dropout layer value - 20%
