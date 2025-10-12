@@ -35,7 +35,7 @@ from ai_snake_lab.ai.EpsilonAlgo import EpsilonAlgo
 from ai_snake_lab.game.GameBoard import GameBoard
 from ai_snake_lab.game.SnakeGame import SnakeGame
 
-from ai_snake_lab.ui.Db4EPlot import Db4EPlot
+from ai_snake_lab.ui.LabPlot import LabPlot
 
 
 SNAKE_LAB_THEME = Theme(
@@ -248,7 +248,7 @@ class AISim(App):
         # Highscores
         yield Vertical(
             Label(
-                f"   [b #3e99af]{DLabel.GAME:6s}{DLabel.SCORE:6s}    {DLabel.TIME:10s}[/]"
+                f"   [b #3e99af]{DLabel.GAME:6s}{DLabel.SCORE:6s}       {DLabel.TIME:10s}[/]"
             ),
             Log(highlight=False, auto_scroll=True, id=DLayout.HIGHSCORES),
             id=DLayout.HIGHSCORES_BOX,
@@ -259,7 +259,7 @@ class AISim(App):
         yield Static(id=DLayout.FILLER_3)
 
         # The game score plot
-        yield Db4EPlot(
+        yield LabPlot(
             title=DLabel.GAME_SCORE,
             id=DLayout.GAME_SCORE_PLOT,
             thin_method=Plot.SLIDING,
@@ -268,7 +268,7 @@ class AISim(App):
     def on_mount(self):
         # Configuration defaults
         self.set_defaults()
-        game_score_plot = self.query_one(f"#{DLayout.GAME_SCORE_PLOT}", Db4EPlot)
+        game_score_plot = self.query_one(f"#{DLayout.GAME_SCORE_PLOT}", LabPlot)
         game_score_plot.set_xlabel(DLabel.GAME_NUM)
         game_score_plot.set_ylabel(DLabel.GAME_SCORE)
         settings_box = self.query_one(f"#{DLayout.SETTINGS_BOX}", Vertical)
@@ -321,6 +321,11 @@ class AISim(App):
             # The highscores (a Log widget ) should be cleared
             highscores = self.query_one(f"#{DLayout.HIGHSCORES}", Log)
             highscores.clear()
+
+            # Clear the plot data
+            game_score_plot = self.query_one(f"#{DLayout.GAME_SCORE_PLOT}", LabPlot)
+            game_score_plot.clear_data()
+            game_score_plot.clear()
 
             # Signal thread to stop
             self.stop_event.set()
@@ -401,9 +406,10 @@ class AISim(App):
         highscores = self.query_one(f"#{DLayout.HIGHSCORES}", Log)
         cur_epsilon = self.query_one(f"#{DLayout.CUR_EPSILON}", Label)
         cur_stored_games = self.query_one(f"#{DLayout.STORED_GAMES}", Label)
-        game_score_plot = self.query_one(f"#{DLayout.GAME_SCORE_PLOT}", Db4EPlot)
+        game_score_plot = self.query_one(f"#{DLayout.GAME_SCORE_PLOT}", LabPlot)
         cur_runtime = self.query_one(f"#{DLayout.RUNTIME}", Label)
         training_game_id = self.query_one(f"#{DLayout.CUR_TRAINING_GAME_ID}", Label)
+        cur_move_delay = self.query_one(f"#{DLayout.MOVE_DELAY}", Input)
 
         # The main training loop)
         while not self.stop_event.is_set():
@@ -425,7 +431,7 @@ class AISim(App):
                 highscore = score
                 elapsed_secs = (datetime.now() - start_time).total_seconds()
                 runtime_str = minutes_to_uptime(elapsed_secs)
-                highscores.write_line(f"{epoch:6d} {score:6d} {runtime_str:>9s}")
+                highscores.write_line(f"{epoch:6d} {score:6d} {runtime_str:>12s}")
 
             # Update the highscore and score on the game box
             game_box.border_subtitle = (
@@ -435,7 +441,6 @@ class AISim(App):
             # We're still playing the current game
             if not game_over:
                 # Get the current move delay from the UI
-                cur_move_delay = self.query_one(f"#{DLayout.MOVE_DELAY}", Input)
                 time.sleep(float(cur_move_delay.value))
 
                 # Reinforcement learning here....
@@ -479,7 +484,7 @@ class AISim(App):
                 self.stats[DSim.GAME_SCORE][DSim.GAME_SCORE].append(score)
                 # Update the plot object
                 game_score_plot.add_data(epoch, score)
-                game_score_plot.db4e_plot()
+                game_score_plot.lab_plot()
                 # Update the runtime widget
                 elapsed_secs = (datetime.now() - start_time).total_seconds()
                 runtime_str = minutes_to_uptime(elapsed_secs)

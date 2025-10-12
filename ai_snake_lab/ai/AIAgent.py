@@ -85,7 +85,7 @@ class AIAgent:
                 self._model = ModelL(seed=self._seed)
             elif model_type == DModelRNN.MODEL:
                 self._model = ModelRNN(seed=self._seed)
-            self.trainer = AITrainer()
+            self.trainer = AITrainer(seed=self._seed)
             self.trainer.set_model(self._model)
         return self._model_type
 

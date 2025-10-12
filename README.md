@@ -75,7 +75,7 @@ ai-snake-lab
 
 # Acknowledgements
 
-The original code for this project was based on a YouTube tutorial, [Python + PyTorch + Pygame Reinforcement Learning – Train an AI to Play Snake](https://www.youtube.com/watch?v=L8ypSXwyBds&t=1042s&ab_channel=freeCodeCamp.org) by Patrick Loeber. You can access his original code [here](https://github.com/patrickloeber/snake-ai-pytorch) on GitHub. Thank you Patrick!!! You are amazing!!!! This project is a port of the pygame and matplotlib solution.
+The original code for this project was based on a YouTube tutorial, [Python + PyTorch + Pygame Reinforcement Learning – Train an AI to Play Snake](https://www.youtube.com/watch?v=L8ypSXwyBds) by Patrick Loeber. You can access his original code [here](https://github.com/patrickloeber/snake-ai-pytorch) on GitHub. Thank you Patrick!!! You are amazing!!!! This project is a port of the pygame and matplotlib solution.
 
 Thanks also go out to Will McGugan and the [Textual](https://textual.textualize.io/) team. Textual is an amazing framework. Talk about *Rapid Application Development*. Porting this from a Pygame and MatPlotLib solution to Textual took less than a day.
 
@@ -93,7 +93,7 @@ Richard S. Sutton is also an inspiration to me. His thoughts on *Reinforcement L
 
 # Links
 
-- Patrick Loeber's [YouTube Tutorial](https://www.youtube.com/watch?v=L8ypSXwyBds&t=1042s&ab_channel=freeCodeCamp.org)
+- Patrick Loeber's [YouTube Tutorial](https://www.youtube.com/watch?v=L8ypSXwyBds)
 - Will McGugan's [Textual](https://textual.textualize.io/) *Rapid Application Development* framework
 - [Dolphie](https://github.com/charles-001/dolphie): *A single pane of glass for real-time analytics into MySQL/MariaDB & ProxySQL*
 - Richard Sutton's [Homepage](http://www.incompleteideas.net/)

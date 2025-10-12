@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased] 
+
+### Added
+- Added a *Time* column to the *Highscores*
+
+
+---
+
 ## [0.6.0] - 2025-10-12
 
 ### Added

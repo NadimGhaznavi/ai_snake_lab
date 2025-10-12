@@ -2,7 +2,7 @@ Screen {
     layout: grid;
     grid-size: 3 4;
     grid-rows: 3 9 6 9 10;
-    grid-columns: 32 46 32;
+    grid-columns: 32 46 34;
 }
 
 #title {
@@ -62,7 +62,7 @@ Screen {
     dock: bottom;
     border: round #0c323e;
     height: 15;
-    width: 110;
+    width: 112;
     background: black
 }
 

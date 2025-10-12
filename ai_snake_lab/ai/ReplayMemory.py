@@ -26,7 +26,7 @@ class ReplayMemory:
         self.batch_size = 250
         # Valid options: shuffle, random_game or none
         self._mem_type = MEM_TYPE.RANDOM_GAME
-        self.min_games = 1
+        self.min_games = MEM.MIN_GAMES
 
         # All of the states for a game are stored, in order.
         self.cur_memory = []
@@ -185,11 +185,6 @@ class ReplayMemory:
 
         # Replay memory has been disabled
         if mem_type == MEM_TYPE.NONE:
-            return []
-
-        # If the number of stored games is less than MIN_GAMES (10), don't return anything
-        # We need to build up a DB of games to ensure randomness.
-        elif self.get_num_games() < MEM.MIN_GAMES:
             return []
 
         # Return a random game i.e. ordered frames

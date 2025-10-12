@@ -18,7 +18,7 @@ class DSim(ConstGroup):
     RANDOM_SEED: int = 1970
 
     # Size of the statemap, this is from the GameBoard class
-    STATE_SIZE: int = 27
+    STATE_SIZE: int = 19
 
     # The number of "choices" the snake has: go forward, left or right.
     OUTPUT_SIZE: int = 3

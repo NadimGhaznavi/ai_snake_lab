@@ -25,8 +25,8 @@ from ai_snake_lab.constants.DSim import DSim
 
 class AITrainer:
 
-    def __init__(self):
-        torch.manual_seed(1970)
+    def __init__(self, seed):
+        torch.manual_seed(seed)
 
         self.model = None
         self.optimizer = None

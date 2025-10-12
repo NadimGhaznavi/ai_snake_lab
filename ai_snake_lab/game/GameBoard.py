@@ -186,14 +186,14 @@ class GameBoard(ScrollView):
             # 15-21. Snake length bits
             *slb,
             # 22-26. Distances
-            dist_left,
-            dist_right,
-            dist_up,
-            dist_down,
-            free_ahead,
-            local_free,
-            recent_growth,
-            time_since_food,
+            # dist_left,
+            # dist_right,
+            # dist_up,
+            # dist_down,
+            # free_ahead,
+            # local_free,
+            # recent_growth,
+            # time_since_food,
         ]
 
         return [float(x) for x in state]
