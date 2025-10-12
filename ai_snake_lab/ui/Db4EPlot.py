@@ -13,8 +13,9 @@ from collections import deque
 from textual_plot import PlotWidget, HiResMode, LegendLocation
 from textual.app import ComposeResult
 
-from ai_snake_lab.constants.DDb4EPlot import Plot
+from ai_snake_lab.constants.DPlot import Plot
 from ai_snake_lab.constants.DLabels import DLabel
+from ai_snake_lab.constants.DColors import DColor
 
 
 MAX_DATA_POINTS = Plot.MAX_DATA_POINTS
@@ -52,9 +53,6 @@ class Db4EPlot(PlotWidget):
         self._all_days.append(day)
         self._all_values.append(value)
 
-    def set_xlabel(self, label):
-        return super().set_xlabel(label)
-
     def db4e_plot(self, days=None, values=None) -> None:
         if days is not None and values is not None:
             plot_days = days
@@ -74,13 +72,14 @@ class Db4EPlot(PlotWidget):
             x=reduced_days,
             y=reduced_values,
             hires_mode=HiResMode.BRAILLE,
-            line_style="green",
+            line_style=DColor.GREEN,
             label=DLabel.CURRENT,
         )
 
         # Add an average plot over 20 to wash out the spikes and identify when the
         # AI is maxing out.
-        window = max(1, len(reduced_values) // 20)  # e.g., 5% smoothing window
+        window = max(1, len(reduced_values) // 20)
+        # e.g., 5% smoothing window
         if len(reduced_values) > window:
             smoothed = [
                 sum(reduced_values[i : i + window])
@@ -92,7 +91,7 @@ class Db4EPlot(PlotWidget):
                 x=smoothed_days,
                 y=smoothed,
                 hires_mode=HiResMode.BRAILLE,
-                line_style="red",  # distinct color for trend
+                line_style=DColor.RED,  # distinct color for trend
                 label=DLabel.AVERAGE,
             )
         self.show_legend(location=LegendLocation.TOPLEFT)

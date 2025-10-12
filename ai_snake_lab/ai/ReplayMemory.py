@@ -15,7 +15,7 @@ import random
 import sqlite3, pickle
 import tempfile
 
-from ai_snake_lab.constants.DReplayMemory import MEM_TYPE
+from ai_snake_lab.constants.DReplayMemory import MEM_TYPE, MEM
 from ai_snake_lab.constants.DDef import DDef
 
 
@@ -61,7 +61,7 @@ class ReplayMemory:
 
     def append(self, transition, final_score=None):
         """Add a transition to the current game."""
-        old_state, move, reward, new_state, done, final_score = transition
+        (old_state, move, reward, new_state, done) = transition
 
         self.cur_memory.append((old_state, move, reward, new_state, done))
 
@@ -146,7 +146,7 @@ class ReplayMemory:
 
         rand_id = random.choice(all_ids)
         self.cursor.execute(
-            "SELECT state, action, reward, next_state, done "
+            "SELECT game_id, frame_index, state, action, reward, next_state, done "
             "FROM frames WHERE game_id = ? ORDER BY frame_index ASC",
             (rand_id,),
         )
@@ -156,13 +156,15 @@ class ReplayMemory:
 
         game = [
             (
+                int(game_id),
+                int(frame_index),
                 pickle.loads(state_blob),
                 pickle.loads(action),
                 float(reward),
                 pickle.loads(next_state_blob),
                 bool(done),
             )
-            for state_blob, action, reward, next_state_blob, done in rows
+            for game_id, frame_index, state_blob, action, reward, next_state_blob, done in rows
         ]
         return game
 
@@ -181,10 +183,16 @@ class ReplayMemory:
         """
         mem_type = self.mem_type()
 
-        print(f"SELECTED memory type: {mem_type}")
+        # Replay memory has been disabled
         if mem_type == MEM_TYPE.NONE:
             return []
 
+        # If the number of stored games is less than MIN_GAMES (10), don't return anything
+        # We need to build up a DB of games to ensure randomness.
+        elif self.get_num_games() < MEM.MIN_GAMES:
+            return []
+
+        # Return a random game i.e. ordered frames
         elif mem_type == MEM_TYPE.RANDOM_GAME:
             n_games = n_games or 1
             training_data = []
@@ -194,6 +202,7 @@ class ReplayMemory:
                     training_data.extend(game)
             return training_data
 
+        # Return a totally random set of frames
         elif mem_type == MEM_TYPE.SHUFFLE:
             n_frames = n_frames or self.get_average_game_length()
             frames = self.get_random_frames(n=n_frames)
@@ -203,6 +212,7 @@ class ReplayMemory:
             raise ValueError(f"Unknown memory type: {mem_type}")
 
     def init_db(self):
+        # Create the games table
         self.cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS games (
@@ -214,6 +224,7 @@ class ReplayMemory:
         )
         self.conn.commit()
 
+        # Create the frames table
         self.cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS frames (
@@ -231,6 +242,7 @@ class ReplayMemory:
         )
         self.conn.commit()
 
+        # Create the unique index
         self.cursor.execute(
             """
             CREATE UNIQUE INDEX IF NOT EXISTS idx_game_frame ON frames (game_id, frame_index);
@@ -238,6 +250,7 @@ class ReplayMemory:
         )
         self.conn.commit()
 
+        # Create the index on game_id
         self.cursor.execute(
             """
             CREATE INDEX IF NOT EXISTS idx_frames_game_id ON frames (game_id);

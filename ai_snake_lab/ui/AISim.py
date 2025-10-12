@@ -20,14 +20,14 @@ from textual.theme import Theme
 
 from ai_snake_lab.constants.DDef import DDef
 from ai_snake_lab.constants.DEpsilon import DEpsilon
-from ai_snake_lab.constants.DFields import DField
 from ai_snake_lab.constants.DFile import DFile
 from ai_snake_lab.constants.DLayout import DLayout
 from ai_snake_lab.constants.DLabels import DLabel
-from ai_snake_lab.constants.DReplayMemory import MEM_TYPE
-from ai_snake_lab.constants.DDir import DDir
-from ai_snake_lab.constants.DDb4EPlot import Plot
-
+from ai_snake_lab.constants.DReplayMemory import MEM_TYPE, MEM
+from ai_snake_lab.constants.DSim import DSim
+from ai_snake_lab.constants.DPlot import Plot
+from ai_snake_lab.constants.DModelL import DModelL
+from ai_snake_lab.constants.DModelLRNN import DModelRNN
 
 from ai_snake_lab.ai.AIAgent import AIAgent
 from ai_snake_lab.ai.EpsilonAlgo import EpsilonAlgo
@@ -38,10 +38,8 @@ from ai_snake_lab.game.SnakeGame import SnakeGame
 from ai_snake_lab.ui.Db4EPlot import Db4EPlot
 
 
-RANDOM_SEED = 1970
-
-snake_lab_theme = Theme(
-    name="db4e",
+SNAKE_LAB_THEME = Theme(
+    name=DLayout.SNAKE_LAB_THEME,
     primary="#88C0D0",
     secondary="#1f6a83ff",
     accent="#B48EAD",
@@ -60,89 +58,49 @@ snake_lab_theme = Theme(
     },
 )
 
+# A list of tuples, for the TUI's model selection drop down menu (Select widget).
+MODEL_TYPES: list = [
+    (DLabel.LINEAR_MODEL, DModelL.MODEL),
+    (DLabel.RNN_MODEL, DModelRNN.MODEL),
+]
+
+# A dictionary of model_field to model_name values, for the TUI's runtime model
+# widget (Label widget).
+MODEL_TYPE: dict = {
+    DModelL.MODEL: DLabel.LINEAR_MODEL,
+    DModelRNN.MODEL: DLabel.RNN_MODEL,
+}
+
 
 class AISim(App):
     """A Textual app that has an AI Agent playing the Snake Game."""
 
-    TITLE = DDef.APP_TITLE
+    TITLE = DLabel.APP_TITLE
     CSS_PATH = DFile.CSS_FILE
 
-    ## Runtime values
-    # Current epsilon value (degrades in real-time)
-    cur_epsilon_widget = Label(DLabel.N_SLASH_A, id=DLayout.CUR_EPSILON)
-    # Current model type
-    cur_model_type_widget = Label(DLabel.N_SLASH_A, id=DLayout.CUR_MODEL_TYPE)
-    # Time delay between moves
-    cur_move_delay = DDef.MOVE_DELAY
-    # Number of stored games in the ReplayMemory
-    cur_num_games_widget = Label(DLabel.N_SLASH_A, id=DLayout.NUM_GAMES)
-    # Elapsed time
-    cur_runtime_widget = Label(DLabel.N_SLASH_A, id=DLayout.RUNTIME)
-
-    # Intial Settings for Epsilon
-    initial_epsilon_input = Input(
-        restrict=f"0.[0-9]*",
-        compact=True,
-        id=DLayout.EPSILON_INITIAL,
-        classes=DLayout.INPUT_10,
-    )
-    epsilon_min_input = Input(
-        restrict=f"0.[0-9]*",
-        compact=True,
-        id=DLayout.EPSILON_MIN,
-        classes=DLayout.INPUT_10,
-    )
-    epsilon_decay_input = Input(
-        restrict=f"0.[0-9]*",
-        compact=True,
-        id=DLayout.EPSILON_DECAY,
-        classes=DLayout.INPUT_10,
-    )
-    move_delay_input = Input(
-        restrict=f"[0-9]*.[0-9]*",
-        compact=True,
-        id=DLayout.MOVE_DELAY,
-        classes=DLayout.INPUT_10,
-    )
-
-    # Buttons
-    pause_button = Button(label=DLabel.PAUSE, id=DLayout.BUTTON_PAUSE, compact=True)
-    restart_button = Button(
-        label=DLabel.RESTART, id=DLayout.BUTTON_RESTART, compact=True
-    )
-    start_button = Button(label=DLabel.START, id=DLayout.BUTTON_START, compact=True)
-    quit_button = Button(label=DLabel.QUIT, id=DLayout.BUTTON_QUIT, compact=True)
-    defaults_button = Button(
-        label=DLabel.DEFAULTS, id=DLayout.BUTTON_DEFAULTS, compact=True
-    )
-    update_button = Button(label=DLabel.UPDATE, id=DLayout.BUTTON_UPDATE, compact=True)
-
-    # A dictionary to hold runtime statistics
-    stats = {
-        DField.GAME_SCORE: {
-            DField.GAME_NUM: [],
-            DField.GAME_SCORE: [],
-        }
-    }
-
-    game_score_plot = Db4EPlot(
-        title=DLabel.GAME_SCORE, id=DLayout.GAME_SCORE_PLOT, thin_method=Plot.SLIDING
-    )
-
     def __init__(self) -> None:
+        """Constructor"""
         super().__init__()
+
+        # The game board, game, agent and epsilon algorithm object
         self.game_board = GameBoard(20, id=DLayout.GAME_BOARD)
         self.snake_game = SnakeGame(game_board=self.game_board, id=DLayout.GAME_BOARD)
-        self.epsilon_algo = EpsilonAlgo(seed=RANDOM_SEED)
-        self.agent = AIAgent(self.epsilon_algo, seed=RANDOM_SEED)
-        self.cur_state = DField.STOPPED
-        self.game_score_plot._x_label = DLabel.GAME_NUM
-        self.game_score_plot._y_label = DLabel.GAME_SCORE
+        self.epsilon_algo = EpsilonAlgo(seed=DSim.RANDOM_SEED)
+        self.agent = AIAgent(self.epsilon_algo, seed=DSim.RANDOM_SEED)
 
-        # Setup the simulator in a background thread
+        # A dictionary to hold runtime statistics
+        self.stats = {
+            DSim.GAME_SCORE: {
+                DSim.GAME_NUM: [],
+                DSim.GAME_SCORE: [],
+            }
+        }
+
+        # Prepare to run the main training loop in a background thread
+        self.cur_state = DSim.STOPPED
+        self.running = DSim.STOPPED
         self.stop_event = threading.Event()
         self.pause_event = threading.Event()
-        self.running = DField.STOPPED
         self.simulator_thread = threading.Thread(target=self.start_sim, daemon=True)
 
     async def action_quit(self) -> None:
@@ -156,7 +114,7 @@ class AISim(App):
         """Create child widgets for the app."""
 
         # Title bar
-        yield Label(DDef.APP_TITLE, id=DLayout.TITLE)
+        yield Label(DLabel.APP_TITLE, id=DLayout.TITLE)
 
         # Configuration Settings
         yield Vertical(
@@ -165,32 +123,69 @@ class AISim(App):
                     f"{DLabel.EPSILON_INITIAL}",
                     classes=DLayout.LABEL_SETTINGS,
                 ),
-                self.initial_epsilon_input,
+                Input(
+                    restrict=f"0.[0-9]*",
+                    compact=True,
+                    id=DLayout.EPSILON_INITIAL,
+                    classes=DLayout.INPUT_10,
+                ),
             ),
             Horizontal(
                 Label(
                     f"{DLabel.EPSILON_DECAY}",
                     classes=DLayout.LABEL_SETTINGS,
                 ),
-                self.epsilon_decay_input,
+                Input(
+                    restrict=f"0.[0-9]*",
+                    compact=True,
+                    id=DLayout.EPSILON_DECAY,
+                    classes=DLayout.INPUT_10,
+                ),
             ),
             Horizontal(
                 Label(f"{DLabel.EPSILON_MIN}", classes=DLayout.LABEL_SETTINGS),
-                self.epsilon_min_input,
+                Input(
+                    restrict=f"0.[0-9]*",
+                    compact=True,
+                    id=DLayout.EPSILON_MIN,
+                    classes=DLayout.INPUT_10,
+                ),
             ),
             Horizontal(
                 Label(
                     f"{DLabel.MOVE_DELAY}",
                     classes=DLayout.LABEL_SETTINGS,
                 ),
-                self.move_delay_input,
+                Input(
+                    restrict=f"[0-9]*.[0-9]*",
+                    compact=True,
+                    id=DLayout.MOVE_DELAY,
+                    classes=DLayout.INPUT_10,
+                ),
+            ),
+            Horizontal(
+                Label(
+                    f"{DLabel.MODEL_TYPE}",
+                    classes=DLayout.LABEL_SETTINGS_19,
+                ),
+                Select(
+                    MODEL_TYPES,
+                    compact=True,
+                    id=DLayout.MODEL_TYPE,
+                    allow_blank=False,
+                ),
             ),
             Horizontal(
                 Label(
                     f"{DLabel.MEM_TYPE}",
                     classes=DLayout.LABEL_SETTINGS_12,
                 ),
-                Select(MEM_TYPE.MEMORY_TYPES, compact=True, id=DLayout.MEM_TYPE),
+                Select(
+                    MEM_TYPE.MEMORY_TYPES,
+                    compact=True,
+                    id=DLayout.MEM_TYPE,
+                    allow_blank=False,
+                ),
             ),
             id=DLayout.SETTINGS_BOX,
         )
@@ -204,8 +199,12 @@ class AISim(App):
         # Runtime values
         yield Vertical(
             Horizontal(
-                Label(f"{DLabel.EPSILON}", classes=DLayout.LABEL),
-                self.cur_epsilon_widget,
+                Label(f"{DLabel.MODEL_TYPE}", classes=DLayout.LABEL),
+                Label(DLabel.N_SLASH_A, id=DLayout.CUR_MODEL_TYPE),
+            ),
+            Horizontal(
+                Label(f"{DLabel.MOVE_DELAY}", classes=DLayout.LABEL),
+                Label(DLabel.N_SLASH_A, id=DLayout.CUR_MOVE_DELAY),
             ),
             Horizontal(
                 Label(f"{DLabel.MEM_TYPE}", classes=DLayout.LABEL),
@@ -213,15 +212,19 @@ class AISim(App):
             ),
             Horizontal(
                 Label(f"{DLabel.STORED_GAMES}", classes=DLayout.LABEL),
-                self.cur_num_games_widget,
+                Label(DLabel.N_SLASH_A, id=DLayout.STORED_GAMES),
             ),
             Horizontal(
-                Label(f"{DLabel.MODEL_TYPE}", classes=DLayout.LABEL),
-                self.cur_model_type_widget,
+                Label(f"{DLabel.TRAINING_GAME_ID}", classes=DLayout.LABEL),
+                Label(DLabel.N_SLASH_A, id=DLayout.CUR_TRAINING_GAME_ID),
+            ),
+            Horizontal(
+                Label(f"{DLabel.CUR_EPSILON}", classes=DLayout.LABEL),
+                Label(DLabel.N_SLASH_A, id=DLayout.CUR_EPSILON),
             ),
             Horizontal(
                 Label(f"{DLabel.RUNTIME}", classes=DLayout.LABEL),
-                self.cur_runtime_widget,
+                Label(DLabel.N_SLASH_A, id=DLayout.RUNTIME),
             ),
             id=DLayout.RUNTIME_BOX,
         )
@@ -229,58 +232,60 @@ class AISim(App):
         # Buttons
         yield Vertical(
             Horizontal(
-                self.start_button,
-                self.pause_button,
-                self.quit_button,
+                Button(label=DLabel.START, id=DLayout.BUTTON_START, compact=True),
+                Button(label=DLabel.PAUSE, id=DLayout.BUTTON_PAUSE, compact=True),
+                Button(label=DLabel.QUIT, id=DLayout.BUTTON_QUIT, compact=True),
                 classes=DLayout.BUTTON_ROW,
             ),
             Horizontal(
-                self.defaults_button,
-                self.update_button,
-                self.restart_button,
+                Button(label=DLabel.DEFAULTS, id=DLayout.BUTTON_DEFAULTS, compact=True),
+                Button(label=DLabel.UPDATE, id=DLayout.BUTTON_UPDATE, compact=True),
+                Button(label=DLabel.RESTART, id=DLayout.BUTTON_RESTART, compact=True),
                 classes=DLayout.BUTTON_ROW,
             ),
         )
 
-        # Empty fillers
+        # Highscores
         yield Vertical(
-            Static(id=DLayout.HIGHSCORES_HEADER),
+            Label(f"   [b #3e99af]{DLabel.GAME:6s}{DLabel.SCORE:6s}[/]"),
             Log(highlight=False, auto_scroll=True, id=DLayout.HIGHSCORES),
             id=DLayout.HIGHSCORES_BOX,
         )
+
+        # Empty placeholders for the grid layout
         yield Static(id=DLayout.FILLER_2)
         yield Static(id=DLayout.FILLER_3)
 
         # The game score plot
-        yield self.game_score_plot
+        yield Db4EPlot(
+            title=DLabel.GAME_SCORE,
+            id=DLayout.GAME_SCORE_PLOT,
+            thin_method=Plot.SLIDING,
+        )
 
     def on_mount(self):
-        self.initial_epsilon_input.value = str(DEpsilon.EPSILON_INITIAL)
-        self.epsilon_decay_input.value = str(DEpsilon.EPSILON_DECAY)
-        self.epsilon_min_input.value = str(DEpsilon.EPSILON_MIN)
-        self.move_delay_input.value = str(DDef.MOVE_DELAY)
+        # Configuration defaults
+        self.set_defaults()
+        game_score_plot = self.query_one(f"#{DLayout.GAME_SCORE_PLOT}", Db4EPlot)
+        game_score_plot.set_xlabel(DLabel.GAME_NUM)
+        game_score_plot.set_ylabel(DLabel.GAME_SCORE)
         settings_box = self.query_one(f"#{DLayout.SETTINGS_BOX}", Vertical)
         settings_box.border_title = DLabel.SETTINGS
-        runtime_box = self.query_one(f"#{DLayout.RUNTIME_BOX}", Vertical)
-        runtime_box.border_title = DLabel.RUNTIME_VALUES
+        # Runtime values
         highscore_box = self.query_one(f"#{DLayout.HIGHSCORES_BOX}", Vertical)
         highscore_box.border_title = DLabel.HIGHSCORES
-        cur_mem_type_widget = self.query_one(f"#{DLayout.CUR_MEM_TYPE}", Label)
-        cur_mem_type_widget.update(DLabel.N_SLASH_A)
-        highscores_header = self.query_one(f"#{DLayout.HIGHSCORES_HEADER}", Static)
-        highscores_header.update(f"   [b #3e99af]{DLabel.GAME:6s}{DLabel.SCORE:6s}[/]")
-        memory_type_widget = self.query_one(f"#{DLayout.MEM_TYPE}")
-        memory_type_widget.value = MEM_TYPE.RANDOM_GAME
-        # Initial state is that the app is stopped
-        self.add_class(DField.STOPPED)
-        # Register the theme
-        self.register_theme(snake_lab_theme)
+        runtime_box = self.query_one(f"#{DLayout.RUNTIME_BOX}", Vertical)
+        runtime_box.border_title = DLabel.RUNTIME_VALUES
 
-        # Set the app's theme
-        self.theme = "db4e"
+        # Initial state is that the app is stopped
+        self.add_class(DSim.STOPPED)
+
+        # Register and set the theme
+        self.register_theme(SNAKE_LAB_THEME)
+        self.theme = DLayout.SNAKE_LAB_THEME
 
     def on_quit(self):
-        if self.running == DField.RUNNING:
+        if self.running == DSim.RUNNING:
             self.stop_event.set()
             if self.simulator_thread.is_alive():
                 self.simulator_thread.join()
@@ -292,70 +297,60 @@ class AISim(App):
         # Pause button was pressed
         if button_id == DLayout.BUTTON_PAUSE:
             self.pause_event.set()
-            self.running = DField.PAUSED
-            self.remove_class(DField.RUNNING)
-            self.add_class(DField.PAUSED)
-            self.cur_move_delay = float(self.move_delay_input.value)
-            self.cur_model_type_widget.update(self.agent.model_type())
+            self.running = DSim.PAUSED
+            self.remove_class(DSim.RUNNING)
+            self.add_class(DSim.PAUSED)
 
         # Restart button was pressed
         elif button_id == DLayout.BUTTON_RESTART:
-            self.running = DField.STOPPED
-            self.add_class(DField.STOPPED)
-            self.remove_class(DField.PAUSED)
+            self.running = DSim.STOPPED
+            self.add_class(DSim.STOPPED)
+            self.remove_class(DSim.PAUSED)
+
+            # Reset the game and the UI
+            self.snake_game.reset()
+            # TODO reset the model weights!!
+
+            # We display the game number, highscore and score here, so clear it.
+            game_box = self.query_one(f"#{DLayout.GAME_BOX}", Vertical)
+            game_box.border_title = ""
+            game_box.border_subtitle = ""
+
+            # The highscores (a Log widget ) should be cleared
+            highscores = self.query_one(f"#{DLayout.HIGHSCORES}", Log)
+            highscores.clear()
 
             # Signal thread to stop
             self.stop_event.set()
-            # Unpause so we can exit cleanly
+            # Unpause so we're not blocking
             self.pause_event.clear()
             # Join the old thread
             if self.simulator_thread.is_alive():
                 self.simulator_thread.join(timeout=2)
-
-            # Reset the game and the UI
-            self.snake_game.reset()
-            score = 0
-            highscore = 0
-            self.epoch = 1
-            game_box = self.query_one(f"#{DLayout.GAME_BOX}", Vertical)
-            game_box.border_title = ""
-            game_box.border_subtitle = ""
-            highscores = self.query_one(f"#{DLayout.HIGHSCORES}", Log)
-            highscores.clear()
-
-            # Recreate events and get a new thread
+            # Recreate threading events and get a new thread
             self.stop_event = threading.Event()
             self.pause_event = threading.Event()
             self.simulator_thread = threading.Thread(target=self.start_sim, daemon=True)
 
         # Start button was pressed
         elif button_id == DLayout.BUTTON_START:
-            if self.running == DField.STOPPED:
+            # Get the configuration settings, put them into the runtime widgets and
+            # pass the values to the actual backend objects
+            self.update_settings()
+
+            if self.running == DSim.STOPPED:
                 self.start_thread()
-            elif self.running == DField.PAUSED:
+            elif self.running == DSim.PAUSED:
                 self.pause_event.clear()
             self.pause_event.clear()
-            self.running = DField.RUNNING
-            self.add_class(DField.RUNNING)
-            self.remove_class(DField.STOPPED)
-            self.remove_class(DField.PAUSED)
-            self.cur_move_delay = float(self.move_delay_input.value)
-            self.cur_model_type_widget.update(self.agent.model_type())
-            memory_type_widget = self.query_one(f"#{DLayout.MEM_TYPE}")
-            self.agent.memory.mem_type(memory_type_widget.value)
-            cur_mem_type_widget = self.query_one(f"#{DLayout.CUR_MEM_TYPE}", Label)
-            cur_mem_type_widget.update(
-                MEM_TYPE.MEM_TYPE_TABLE[memory_type_widget.value]
-            )
+            self.running = DSim.RUNNING
+            self.add_class(DSim.RUNNING)
+            self.remove_class(DSim.STOPPED)
+            self.remove_class(DSim.PAUSED)
 
         # Defaults button was pressed
         elif button_id == DLayout.BUTTON_DEFAULTS:
-            self.initial_epsilon_input.value = str(DEpsilon.EPSILON_INITIAL)
-            self.epsilon_decay_input.value = str(DEpsilon.EPSILON_DECAY)
-            self.epsilon_min_input.value = str(DEpsilon.EPSILON_MIN)
-            self.move_delay_input.value = str(DDef.MOVE_DELAY)
-            memory_type_widget = self.query_one(f"#{DLayout.MEM_TYPE}")
-            memory_type_widget.value = MEM_TYPE.RANDOM_GAME
+            self.set_defaults()
 
         # Quit button was pressed
         elif button_id == DLayout.BUTTON_QUIT:
@@ -363,84 +358,157 @@ class AISim(App):
 
         # Update button was pressed
         elif button_id == DLayout.BUTTON_UPDATE:
-            self.cur_move_delay = float(self.move_delay_input.value)
-            memory_type_widget = self.query_one(f"#{DLayout.MEM_TYPE}")
-            self.agent.memory.mem_type(memory_type_widget.value)
+            self.update_settings()
+
+    def set_defaults(self):
+        initial_epsilon = self.query_one(f"#{DLayout.EPSILON_INITIAL}", Input)
+        initial_epsilon.value = str(DEpsilon.EPSILON_INITIAL)
+        epsilon_decay = self.query_one(f"#{DLayout.EPSILON_DECAY}", Input)
+        epsilon_decay.value = str(DEpsilon.EPSILON_DECAY)
+        epsilon_min = self.query_one(f"#{DLayout.EPSILON_MIN}", Input)
+        epsilon_min.value = str(DEpsilon.EPSILON_MIN)
+        mem_type = self.query_one(f"#{DLayout.MEM_TYPE}", Select)
+        mem_type.value = MEM_TYPE.RANDOM_GAME
+        model_type = self.query_one(f"#{DLayout.MODEL_TYPE}", Select)
+        model_type.value = DModelRNN.MODEL
+        move_delay = self.query_one(f"#{DLayout.MOVE_DELAY}", Input)
+        move_delay.value = str(DDef.MOVE_DELAY)
 
     def start_sim(self):
-        self.snake_game.reset()
         game_board = self.game_board
         agent = self.agent
         snake_game = self.snake_game
+
+        # Reset the score, highscore and epoch
         score = 0
         highscore = 0
-        self.epoch = 1
-        game_box = self.query_one(f"#{DLayout.GAME_BOX}", Vertical)
-        game_box.border_title = f"{DLabel.GAME} #{self.epoch}"
-        start_time = datetime.now()
-        self.cur_num_games_widget.update(str(self.agent.memory.get_num_games()))
-        highscores = self.query_one(f"#{DLayout.HIGHSCORES}", Log)
+        epoch = 1
 
+        # Update the game box, where we display the score, highscore and epch
+        game_box = self.query_one(f"#{DLayout.GAME_BOX}", Vertical)
+        game_box.border_title = f"{DLabel.GAME} #{epoch}"
+        game_box.border_subtitle = (
+            f"{DLabel.HIGHSCORE}: {highscore}, {DLabel.SCORE}: {score}"
+        )
+
+        # Start the clock for the current runtime
+        start_time = datetime.now()
+
+        # Get a reference to the stored games, highscores and current epsilon widgets.
+        # We'll update these in the main training loop.
+        highscores = self.query_one(f"#{DLayout.HIGHSCORES}", Log)
+        cur_epsilon = self.query_one(f"#{DLayout.CUR_EPSILON}", Label)
+        cur_stored_games = self.query_one(f"#{DLayout.STORED_GAMES}", Label)
+        game_score_plot = self.query_one(f"#{DLayout.GAME_SCORE_PLOT}", Db4EPlot)
+        cur_runtime = self.query_one(f"#{DLayout.RUNTIME}", Label)
+        training_game_id = self.query_one(f"#{DLayout.CUR_TRAINING_GAME_ID}", Label)
+
+        # The main training loop)
         while not self.stop_event.is_set():
+            ## The actual training loop...
+
+            # Watch for user's pushing the pause button
             if self.pause_event.is_set():
                 self.pause_event.wait()
                 time.sleep(0.2)
                 continue
-            # The actual training loop...
+
+            # Reinforcement learning starts here
             old_state = game_board.get_state()
             move = agent.get_move(old_state)
             reward, game_over, score = snake_game.play_step(move)
+
+            # New highscore! Add a line to the highscores Log widget
             if score > highscore:
                 highscore = score
-                # Update the UI
-                highscores.write_line(f"{self.epoch:6d} {score:6d}")
+                highscores.write_line(f"{epoch:6d} {score:6d}")
+
+            # Update the highscore and score on the game box
             game_box.border_subtitle = (
                 f"{DLabel.HIGHSCORE}: {highscore}, {DLabel.SCORE}: {score}"
             )
+
+            # We're still playing the current game
             if not game_over:
-                ## Keep playing
-                time.sleep(self.cur_move_delay)
+                # Get the current move delay from the UI
+                cur_move_delay = self.query_one(f"#{DLayout.MOVE_DELAY}", Input)
+                time.sleep(float(cur_move_delay.value))
+
+                # Reinforcement learning here....
                 new_state = game_board.get_state()
                 agent.train_short_memory(old_state, move, reward, new_state, game_over)
-                agent.remember(old_state, move, reward, new_state, game_over)
+                agent.memory.append((old_state, move, reward, new_state, game_over))
+
+            # Game is over
             else:
-                ## Game over
-                self.epoch += 1
-                game_box = self.query_one(f"#{DLayout.GAME_BOX}", Vertical)
-                game_box.border_title = f"{DLabel.GAME} #{self.epoch}"
-                # Remember the last move
-                agent.remember(
-                    old_state, move, reward, new_state, game_over, score=score
+                # Increment the epoch and update the game box widget
+                epoch += 1
+                game_box.border_title = f"{DLabel.GAME} #{epoch}"
+
+                # Remember the last move, get's passed to the ReplayMemory
+                agent.memory.append(
+                    (old_state, move, reward, new_state, game_over), final_score=score
                 )
                 # Train long memory
+                agent.load_training_data()
+                game_id = agent.game_id()
+                if game_id == MEM.NO_DATA:
+                    training_game_id.update(DLabel.N_SLASH_A)
+                else:
+                    training_game_id.update(str(game_id))
                 agent.train_long_memory()
                 # Reset the game
                 snake_game.reset()
-                # Let the agent know we've finished a game
-                agent.played_game(score)
+                # The Epsilon algorithm object needs to know when the game is over to
+                # decay epsilon
+                agent.epsilon_algo.played_game()
                 # Get the current epsilon value
-                cur_epsilon = self.epsilon_algo.epsilon()
-                if cur_epsilon < 0.0001:
-                    self.cur_epsilon_widget.update("0.0000")
+                cur_epsilon_value = self.epsilon_algo.epsilon()
+                if cur_epsilon_value < 0.0001:
+                    cur_epsilon.update("0.0000")
                 else:
-                    self.cur_epsilon_widget.update(str(round(cur_epsilon, 4)))
+                    cur_epsilon.update(str(round(cur_epsilon_value, 4)))
                 # Update the number of stored memories
-                self.cur_num_games_widget.update(str(self.agent.memory.get_num_games()))
+                cur_stored_games.update(str(self.agent.memory.get_num_games()))
                 # Update the stats object
-                self.stats[DField.GAME_SCORE][DField.GAME_NUM].append(self.epoch)
-                self.stats[DField.GAME_SCORE][DField.GAME_SCORE].append(score)
+                self.stats[DSim.GAME_SCORE][DSim.GAME_NUM].append(epoch)
+                self.stats[DSim.GAME_SCORE][DSim.GAME_SCORE].append(score)
                 # Update the plot object
-                self.game_score_plot.add_data(self.epoch, score)
-                self.game_score_plot.db4e_plot()
+                game_score_plot.add_data(epoch, score)
+                game_score_plot.db4e_plot()
                 # Update the runtime widget
                 elapsed_secs = (datetime.now() - start_time).total_seconds()
-                runtime = minutes_to_uptime(elapsed_secs)
-                self.cur_runtime_widget.update(runtime)
+                runtime_str = minutes_to_uptime(elapsed_secs)
+                cur_runtime.update(runtime_str)
 
     def start_thread(self):
         self.simulator_thread.start()
 
+    def update_settings(self):
+        # Get the move delay from the settings, put it into the runtime
+        move_delay = self.query_one(f"#{DLayout.MOVE_DELAY}", Input)
+        cur_move_delay = self.query_one(f"#{DLayout.CUR_MOVE_DELAY}", Label)
+        cur_move_delay.update(move_delay.value)
 
+        ## Changing these setings on-the-fly is like swapping out your carburetor while
+        ## you're in the middle of a race. But, this is a sandbox, so let the user play.
+
+        # Get the model type from the settings, put it into the runtime
+        model_type = self.query_one(f"#{DLayout.MODEL_TYPE}", Select)
+        cur_model_type = self.query_one(f"#{DLayout.CUR_MODEL_TYPE}", Label)
+        cur_model_type.update(MODEL_TYPE[model_type.value])
+        # Also pass it to the Agent
+        self.agent.model_type(model_type=model_type.value)
+
+        # Get the memory type from the settings, put it into the runtime
+        memory_type = self.query_one(f"#{DLayout.MEM_TYPE}", Select)
+        cur_mem_type = self.query_one(f"#{DLayout.CUR_MEM_TYPE}", Label)
+        cur_mem_type.update(MEM_TYPE.MEM_TYPE_TABLE[memory_type.value])
+        # Also pass the selected memory type to the ReplayMemory object
+        self.agent.memory.mem_type(memory_type.value)
+
+
+# Helper function
 def minutes_to_uptime(seconds: int):
     # Return a string like:
     # 0h 0m 45s
@@ -459,6 +527,7 @@ def minutes_to_uptime(seconds: int):
         return f"{seconds}s"
 
 
+# This is for the pyPI ai-snake-lab entry point to work....
 def main():
     app = AISim()
     app.run()

@@ -29,7 +29,6 @@ class EpsilonAlgo:
         self._epsilon_min = DEpsilon.EPSILON_MIN
         self._epsilon_decay = DEpsilon.EPSILON_DECAY
         self._epsilon = self._initial_epsilon
-        self._num_games = 0
         self._injected = 0
         self._depleted = False
 
@@ -64,7 +63,6 @@ class EpsilonAlgo:
         return self._injected
 
     def played_game(self):
-        self._num_games += 1
         self._epsilon = max(self._epsilon_min, self._epsilon * self._epsilon_decay)
         self.reset_injected()
 

@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added
+- Added a `DColors` constants file.
+- Updated website content.
+  - Added *Schema*, *Constants*, *Project Layout*, *Git Branching* and *Git Commit* technical documents.
+  - Added a *Richard Sutton* page.
+- ReplayMemory exposes the current training game ID:
+  - Modified the `ReplayMemory` to return the stored game and frame IDs.
+  - Modified the `AIAgent` to first load the training data, get the training game ID, then train.
+  - Modified `AISim` to get the training game ID from teh `AIAgent` and display it in the TUI.
+
+### Changed
+- Set the *learning rate* in the `AITrainer`, based on the selected *model*.
+
+### Refactor
+- Made handling and definition of constants consistent.
+- Renamed the `DDb4ePlot` constants file to `DPlot`
+
+---
+
 ## [0.5.0] - 2025-10-11
 
 ### Added

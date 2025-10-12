@@ -24,7 +24,7 @@ class ModelRNN(nn.Module):
         hidden_size = DModelRNN.HIDDEN_SIZE
         output_size = DSim.OUTPUT_SIZE
         rnn_layers = DModelRNN.RNN_LAYERS
-        rnn_dropout = DModelRNN.RNN_DROPOUT
+        rnn_dropout = DModelRNN.P_VALUE
         self.m_in = nn.Sequential(
             nn.Linear(input_size, hidden_size),
             nn.ReLU(),
@@ -32,7 +32,7 @@ class ModelRNN(nn.Module):
         self.m_rnn = nn.RNN(
             input_size=hidden_size,
             hidden_size=hidden_size,
-            nonlinearity="tanh",
+            nonlinearity=DModelRNN.NON_LINEARITY,
             num_layers=rnn_layers,
             dropout=rnn_dropout,
         )
