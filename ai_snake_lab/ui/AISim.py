@@ -247,7 +247,9 @@ class AISim(App):
 
         # Highscores
         yield Vertical(
-            Label(f"   [b #3e99af]{DLabel.GAME:6s}{DLabel.SCORE:6s}[/]"),
+            Label(
+                f"   [b #3e99af]{DLabel.GAME:6s}{DLabel.SCORE:6s}    {DLabel.TIME:10s}[/]"
+            ),
             Log(highlight=False, auto_scroll=True, id=DLayout.HIGHSCORES),
             id=DLayout.HIGHSCORES_BOX,
         )
@@ -421,7 +423,9 @@ class AISim(App):
             # New highscore! Add a line to the highscores Log widget
             if score > highscore:
                 highscore = score
-                highscores.write_line(f"{epoch:6d} {score:6d}")
+                elapsed_secs = (datetime.now() - start_time).total_seconds()
+                runtime_str = minutes_to_uptime(elapsed_secs)
+                highscores.write_line(f"{epoch:6d} {score:6d} {runtime_str:>9s}")
 
             # Update the highscore and score on the game box
             game_box.border_subtitle = (

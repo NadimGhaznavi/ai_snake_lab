@@ -45,6 +45,7 @@ class DLabel(ConstGroup):
     SETTINGS: str = "Configuration Settings"
     START: str = "Start"
     STORED_GAMES: str = "Stored Games"
+    TIME: str = "Time"
     TRAINING_GAME_ID: str = "Training Game ID"
     RESTART: str = "Restart"
     UPDATE: str = "Update"
