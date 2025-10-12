@@ -64,8 +64,12 @@ ai-snake-lab
 
 # Technical Docs
 
+- [Filesystem Layout](/pages/project_layout.html)
 - [Database Schema Documentation](/pages/db_schema.html)
-- [Project Layout](/pages/project_layout.html)
+- Organization and Naming of [Constants](/pages/constants.html)
+- [Git Commit Standards](/pages/git_commit_standards.html)
+- [Git Branching Strategy](/pages/git_branching_strategy.html)
+- [Change Log](/CHANGELOG.md)
 
 ---
 
