@@ -311,7 +311,6 @@ class AISim(App):
 
             # Reset the game and the UI
             self.snake_game.reset()
-            # TODO reset the model weights!!
 
             # We display the game number, highscore and score here, so clear it.
             game_box = self.query_one(f"#{DLayout.GAME_BOX}", Vertical)
@@ -326,6 +325,9 @@ class AISim(App):
             game_score_plot = self.query_one(f"#{DLayout.GAME_SCORE_PLOT}", LabPlot)
             game_score_plot.clear_data()
             game_score_plot.clear()
+
+            # Reset the neural network's learned weights
+            self.agent.model.reset_parameters()
 
             # Signal thread to stop
             self.stop_event.set()

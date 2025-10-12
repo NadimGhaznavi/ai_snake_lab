@@ -12,6 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added a *Time* column to the *Highscores*
 
+### Changed
+- Plotting Widget:
+  - Renamed the plotting widget from `Db4EPlot` to `LabPlot`
+  - Removed the code that averaged results since I'm using a sliding method instead.
+
+### Fixed
+- Cleared the *Plot Widget* when the *Restart* button is pressedn
+- Reset the neural network model's learned weights when the *Restart* button is pressed.
+
 
 ---
 

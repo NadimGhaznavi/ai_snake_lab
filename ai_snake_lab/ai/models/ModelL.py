@@ -41,3 +41,8 @@ class ModelL(nn.Module):
         x = self.dropout_block(x)
         x = self.output_block(x)
         return x
+
+    def reset_parameters(self):
+        for layer in self.children():
+            if hasattr(layer, "reset_parameters"):
+                layer.reset_parameters()
