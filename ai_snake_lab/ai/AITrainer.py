@@ -20,13 +20,27 @@ from ai_snake_lab.ai.models.ModelRNN import ModelRNN
 
 from ai_snake_lab.constants.DModelL import DModelL
 from ai_snake_lab.constants.DModelLRNN import DModelRNN
+from ai_snake_lab.constants.DSim import DSim
 
 
 class AITrainer:
 
-    def __init__(self, model):
+    def __init__(self):
         torch.manual_seed(1970)
 
+        self.model = None
+        self.optimizer = None
+        self.criterion = nn.MSELoss()
+        self.gamma = DSim.DISCOUNT_RATE
+
+    def get_optimizer(self):
+        return self.optimizer
+
+    def set_optimizer(self, optimizer):
+        self.optimizer = optimizer
+
+    def set_model(self, model):
+        self.model = model
         # The learning rate needs to be adjusted for the model type
         if type(model) == ModelL:
             learning_rate = DModelL.LEARNING_RATE
@@ -34,17 +48,7 @@ class AITrainer:
             learning_rate = DModelRNN.LEARNING_RATE
         else:
             raise ValueError(f"Unknown model type: {type(model)}")
-
-        self.model = model
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
-        self.criterion = nn.MSELoss()
-        self.gamma = 0.9
-
-    def get_optimizer(self):
-        return self.optimizer
-
-    def set_optimizer(self, optimizer):
-        self.optimizer = optimizer
 
     def train_step_cnn(self, state, action, reward, next_state, game_over):
         state = torch.tensor(np.array(state), dtype=torch.float)
