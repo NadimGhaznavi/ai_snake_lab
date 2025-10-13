@@ -2,6 +2,7 @@
 
 ---
 
+![AI Snake Lab](/images/ai-snake-lab.png)
 # Introduction
 
 **AI Snake Lab** is an interactive reinforcement learning sandbox for experimenting with AI agents in a classic Snake Game environment — featuring a live Textual TUI interface, flexible replay memory database, and modular model definitions.

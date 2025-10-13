@@ -44,3 +44,8 @@ class ModelRNN(nn.Module):
         x, h_n = self.m_rnn(inputs)
         x = self.m_out(x)
         return x[len(x) - 1]
+
+    def reset_parameters(self):
+        for layer in self.children():
+            if hasattr(layer, "reset_parameters"):
+                layer.reset_parameters()

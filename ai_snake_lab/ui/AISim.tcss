@@ -1,7 +1,7 @@
 Screen {
     layout: grid;
-    grid-size: 3 4;
-    grid-rows: 3 9 6 9 10;
+    grid-size: 3 5;
+    grid-rows: 3 9 6 9 22;
     grid-columns: 32 46 34;
 }
 
@@ -59,9 +59,9 @@ Screen {
 }
 
 #game_score_plot {
-    dock: bottom;
+    column-span: 3;
     border: round #0c323e;
-    height: 15;
+    height: 17;
     width: 112;
     background: black
 }

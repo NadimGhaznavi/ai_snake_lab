@@ -256,7 +256,6 @@ class AISim(App):
 
         # Empty placeholders for the grid layout
         yield Static(id=DLayout.FILLER_2)
-        yield Static(id=DLayout.FILLER_3)
 
         # The game score plot
         yield LabPlot(
