@@ -215,7 +215,11 @@ class AISim(App):
                 Label(DLabel.N_SLASH_A, id=DLayout.STORED_GAMES),
             ),
             Horizontal(
-                Label(f"{DLabel.TRAINING_GAME_ID}", classes=DLayout.LABEL),
+                Label(
+                    f"{DLabel.TRAINING_GAME_ID}",
+                    classes=DLayout.LABEL,
+                    id=DLayout.TRAINING_ID_LABEL,
+                ),
                 Label(DLabel.N_SLASH_A, id=DLayout.CUR_TRAINING_GAME_ID),
             ),
             Horizontal(
@@ -248,7 +252,7 @@ class AISim(App):
         # Highscores
         yield Vertical(
             Label(
-                f"[b #3e99af]{DLabel.GAME:>7s}{DLabel.SCORE:>8s}{DLabel.TIME:>13s}[/]"
+                f"[b #3e99af]{DLabel.GAME:>7s}{DLabel.SCORE:>7s}{DLabel.TIME:>13s}[/]"
             ),
             Log(highlight=False, auto_scroll=True, id=DLayout.HIGHSCORES),
             id=DLayout.HIGHSCORES_BOX,
@@ -328,6 +332,10 @@ class AISim(App):
             # Reset the neural network's learned weights
             model = self.agent.model()
             model.reset_parameters()
+
+            # Set the current stored games back to zero
+            cur_stored_games = self.query_one(f"#{DLayout.STORED_GAMES}", Label)
+            cur_stored_games.update("0")
 
             # Clear the ReplayMemory's runtime DB
             self.agent.memory.clear_runtime_data()
@@ -436,7 +444,7 @@ class AISim(App):
                 highscore = score
                 elapsed_secs = (datetime.now() - start_time).total_seconds()
                 runtime_str = minutes_to_uptime(elapsed_secs)
-                highscores.write_line(f"{epoch:7d} {score:7d} {runtime_str:>12s}")
+                highscores.write_line(f"{epoch:7d}{score:7d}{runtime_str:>13s}")
 
             # Update the highscore and score on the game box
             game_box.border_subtitle = (
@@ -463,14 +471,28 @@ class AISim(App):
                 agent.memory.append(
                     (old_state, move, reward, new_state, game_over), final_score=score
                 )
-                # Train long memory
+
+                # Load the training data
                 agent.load_training_data()
-                game_id = agent.game_id()
-                if game_id == MEM.NO_DATA:
-                    training_game_id.update(DLabel.N_SLASH_A)
-                else:
-                    training_game_id.update(str(game_id))
+                # Update the TUI
+                mem_type = agent.memory.mem_type()
+                # If the memory type is random frames, show the number of frames
+                if mem_type == MEM_TYPE.SHUFFLE:
+                    num_frames = agent.num_frames()
+                    if num_frames == MEM.NO_DATA:
+                        training_game_id.update(DLabel.N_SLASH_A)
+                    else:
+                        training_game_id.update(str(num_frames))
+                # If the memory type is random game, show the game ID
+                elif mem_type == MEM_TYPE.RANDOM_GAME:
+                    game_id = agent.game_id()
+                    if game_id == MEM.NO_DATA:
+                        training_game_id.update(DLabel.N_SLASH_A)
+                    else:
+                        training_game_id.update(str(game_id))
+                # Do the replay memory training
                 agent.train_long_memory()
+
                 # Reset the game
                 snake_game.reset()
                 # The Epsilon algorithm object needs to know when the game is over to
@@ -520,6 +542,12 @@ class AISim(App):
         cur_mem_type.update(MEM_TYPE.MEM_TYPE_TABLE[memory_type.value])
         # Also pass the selected memory type to the ReplayMemory object
         self.agent.memory.mem_type(memory_type.value)
+
+        # Change the current settings from Game ID to Random Frames if we're using
+        # random frames
+        if memory_type.value == MEM_TYPE.SHUFFLE:
+            training_label = self.query_one(f"#{DLayout.TRAINING_ID_LABEL}", Label)
+            training_label.update(DLabel.RANDOM_FRAMES)
 
 
 # Helper function

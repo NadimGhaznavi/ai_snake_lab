@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Fixed
+- Increased width so *Random Frames* isn't truncated.
+- Fixed SQL bug in `ReplayMemory:get_random_frames()`.
+
+### Changed
+- Changed the *highscores* layout so there's a space between the scrollbar and the seconds.
+- Set the *stored games* back to zero when the *restart* button is pressed
+- Clear the data from the *games* and *frames* SQLite3 tables when the *restart* button is pressed.
+
+
+---
+
 ## [0.8.0] - 2025-10-13
 
 ### Changed

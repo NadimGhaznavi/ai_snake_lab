@@ -37,6 +37,7 @@ class DLabel(ConstGroup):
     N_SLASH_A: str = "N/A"
     PAUSE: str = "Pause"
     QUIT: str = "Quit"
+    RANDOM_FRAMES: str = "Random Frames"
     RESTART: str = "Restart"
     RNN_MODEL: str = "RNN"
     RUNTIME: str = "Runtime"

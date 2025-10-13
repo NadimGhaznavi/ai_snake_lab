@@ -16,7 +16,7 @@ from ai_snake_lab.ai.models.ModelL import ModelL
 from ai_snake_lab.ai.models.ModelRNN import ModelRNN
 
 from ai_snake_lab.constants.DLabels import DLabel
-from ai_snake_lab.constants.DReplayMemory import MEM
+from ai_snake_lab.constants.DReplayMemory import MEM, MEM_TYPE
 from ai_snake_lab.constants.DModelL import DModelL
 from ai_snake_lab.constants.DModelLRNN import DModelRNN
 
@@ -30,6 +30,7 @@ class AIAgent:
         self._training_data = []
         self._game_id = None
         self._model_type = None
+        self._num_frames = None
         self._seed = seed
 
     def game_id(self, game_id=None):
@@ -55,16 +56,22 @@ class AIAgent:
         return self.trainer.get_optimizer()
 
     def load_training_data(self):
-        # Ask ReplayMemory for a single game (vectorized)
-        batch, game_id = self.memory.get_training_data()
+        # Ask ReplayMemory for training data and check that it was provided
+        batch, metadata = self.memory.get_training_data()
         if batch is None:
             self.game_id(MEM.NO_DATA)
+            self.num_frames(MEM.NO_DATA)
             return
 
         states, actions, rewards, next_states, dones = batch
 
         # Update current game id for TUI
-        self.game_id(game_id)
+        mem_type = self.memory.mem_type()
+        if mem_type == MEM_TYPE.RANDOM_GAME:
+            self.game_id(metadata)
+        # Update the number of frames for the TUI
+        elif mem_type == MEM_TYPE.SHUFFLE:
+            self.num_frames(metadata)
 
         # Store the training data in the agent (without frame index)
         self._training_data = list(zip(states, actions, rewards, next_states, dones))
@@ -87,6 +94,11 @@ class AIAgent:
 
     def model(self):
         return self._model
+
+    def num_frames(self, frames=None):
+        if frames is not None:
+            self._num_frames = frames
+        return self._num_frames
 
     def set_optimizer(self, optimizer):
         self.trainer.set_optimizer(optimizer)

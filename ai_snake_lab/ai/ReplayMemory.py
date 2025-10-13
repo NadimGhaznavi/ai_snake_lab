@@ -122,21 +122,27 @@ class ReplayMemory:
         avg = self.cursor.fetchone()[0]
         return int(avg) if avg else 0
 
-    def get_random_frames(self, n=None):
+    def get_random_frames(self):
         """Return a random set of frames from the database. Do not use the SQLite3
         RANDOM() function, because we can't set the seed."""
-        if n is None:
-            n = self.get_average_game_length() or 32  # fallback if no data
+        num_frames = self.get_average_game_length() or 32  # fallback if no data
 
-        # Retieve the id values from the frames tables
+        # Retrieve the id values from the frames table
         self.cursor.execute("SELECT id FROM frames")
         all_ids = [row[0] for row in self.cursor.fetchall()]
+
         # Get n random ids
-        sample_ids = random.sample(all_ids, min(n, len(all_ids)))
-        # Get the frames with the sample_ids
+        sample_ids = random.sample(all_ids, min(num_frames, len(all_ids)))
+        if not sample_ids:
+            return []
+
+        # Build placeholders for the SQL IN clause
+        placeholders = ",".join("?" for _ in sample_ids)
+
+        # Execute the query with the unpacked tuple
         self.cursor.execute(
-            "SELECT state, action, reward, next_state, done FROM frames WHERE id IN (?)",
-            (tuple(sample_ids),),
+            f"SELECT state, action, reward, next_state, done FROM frames WHERE id IN ({placeholders})",
+            sample_ids,
         )
         rows = self.cursor.fetchall()
         frames = [
@@ -149,7 +155,7 @@ class ReplayMemory:
             )
             for state_blob, action, reward, next_state_blob, done in rows
         ]
-        return frames
+        return frames, len(frames)
 
     def get_random_game(self):
         self.cursor.execute("SELECT id FROM games")
@@ -189,7 +195,7 @@ class ReplayMemory:
         self.cursor.execute("SELECT COUNT(*) FROM frames")
         return self.cursor.fetchone()[0]
 
-    def get_training_data(self, batch_size=None):
+    def get_training_data(self):
         mem_type = self.mem_type()
 
         if mem_type == MEM_TYPE.NONE:
@@ -201,16 +207,15 @@ class ReplayMemory:
             if not frames:  # no frames available
                 return None, MEM.NO_DATA
             training_data = frames
-            current_game_id = game_id
+            metadata = game_id
 
         # SHUFFLE mode: return a random set of frames
         elif mem_type == MEM_TYPE.SHUFFLE:
-            batch_size = batch_size or self.get_average_game_length() or 32
-            frames = self.get_random_frames(n=batch_size)
+            frames, num_frames = self.get_random_frames()
             if not frames:  # no frames available
                 return None, MEM.NO_DATA
             training_data = frames
-            current_game_id = MEM.NO_DATA
+            metadata = num_frames
 
         else:
             raise ValueError(f"Unknown memory type: {mem_type}")
@@ -222,7 +227,8 @@ class ReplayMemory:
         next_states = [d[3] for d in training_data]
         dones = [d[4] for d in training_data]
 
-        return (states, actions, rewards, next_states, dones), current_game_id
+        print(f"metadata {metadata}")
+        return (states, actions, rewards, next_states, dones), metadata
 
     def init_db(self):
         # Create the games table
@@ -270,6 +276,9 @@ class ReplayMemory:
             """
         )
         self.conn.commit()
+
+        # If the games or frames tables do exist, clear the data
+        self.clear_runtime_data()
 
     def mem_type(self, mem_type=None):
         if mem_type is not None:

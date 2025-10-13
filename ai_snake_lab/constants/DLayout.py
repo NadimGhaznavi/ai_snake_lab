@@ -62,4 +62,5 @@ class DLayout(ConstGroup):
     STORED_GAMES: str = "stored_games"
     TABBED_PLOTS: str = "tabbed_plots"
     TITLE: str = "title"
+    TRAINING_ID_LABEL: str = "training_id_label"
     VARIABLE: str = "variable"
