@@ -15,3 +15,6 @@ class DFile(ConstGroup):
     """Files"""
 
     CSS_FILE: str = "AISim.tcss"  # AI Snake Lab Textual CSS file
+    RUNTIME_DB: str = (
+        "runtime.db"  # The SQLite DB file that stores games and game frames
+    )

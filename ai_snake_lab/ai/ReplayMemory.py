@@ -13,10 +13,12 @@ This file contains the ReplayMemory class.
 import os
 import random
 import sqlite3, pickle
-import tempfile
+from pathlib import Path
 
 from ai_snake_lab.constants.DReplayMemory import MEM_TYPE, MEM
 from ai_snake_lab.constants.DDef import DDef
+from ai_snake_lab.constants.DDir import DDir
+from ai_snake_lab.constants.DFile import DFile
 
 
 class ReplayMemory:
@@ -31,18 +33,17 @@ class ReplayMemory:
         # All of the states for a game are stored, in order.
         self.cur_memory = []
 
-        # Get a temporary directory for the DB file
-        self._tmpfile = tempfile.NamedTemporaryFile(suffix=DDef.DOT_DB, delete=False)
-        self.db_file = self._tmpfile.name
+        # The snake lab stores temporary and persistent files in this directory
+        snake_dir = os.path.join(Path.home(), DDir.DOT + DDir.AI_SNAKE_LAB)
+        if not os.path.exists(snake_dir):
+            os.mkdir(snake_dir)
+        self.db_file = os.path.join(snake_dir, DFile.RUNTIME_DB)
 
         # Connect to SQLite
         self.conn = sqlite3.connect(self.db_file, check_same_thread=False)
 
         # Get a cursor
         self.cursor = self.conn.cursor()
-
-        # We don't need the file handle anymore
-        self._tmpfile.close()
 
         # Intialize the schema
         self.init_db()
@@ -101,6 +102,12 @@ class ReplayMemory:
             self.conn.commit()
             self.cur_memory = []
 
+    def clear_runtime_data(self):
+        """Clear all data out of the runtime DB"""
+        self.cursor.execute("DELETE FROM games")
+        self.cursor.execute("DELETE FROM frames")
+        self.conn.commit()
+
     def close(self):
         """Close the database connection."""
         if getattr(self, "conn", None):
@@ -116,16 +123,22 @@ class ReplayMemory:
         return int(avg) if avg else 0
 
     def get_random_frames(self, n=None):
+        """Return a random set of frames from the database. Do not use the SQLite3
+        RANDOM() function, because we can't set the seed."""
         if n is None:
             n = self.get_average_game_length() or 32  # fallback if no data
 
+        # Retieve the id values from the frames tables
+        self.cursor.execute("SELECT id FROM frames")
+        all_ids = [row[0] for row in self.cursor.fetchall()]
+        # Get n random ids
+        sample_ids = random.sample(all_ids, min(n, len(all_ids)))
+        # Get the frames with the sample_ids
         self.cursor.execute(
-            "SELECT state, action, reward, next_state, done "
-            "FROM frames ORDER BY RANDOM() LIMIT ?",
-            (n,),
+            "SELECT state, action, reward, next_state, done FROM frames WHERE id IN (?)",
+            (tuple(sample_ids),),
         )
         rows = self.cursor.fetchall()
-
         frames = [
             (
                 pickle.loads(state_blob),
@@ -169,6 +182,11 @@ class ReplayMemory:
     def get_num_games(self):
         """Return number of games stored in the database."""
         self.cursor.execute("SELECT COUNT(*) FROM games")
+        return self.cursor.fetchone()[0]
+
+    def get_num_frames(self):
+        """Return number of frames stored in the database."""
+        self.cursor.execute("SELECT COUNT(*) FROM frames")
         return self.cursor.fetchone()[0]
 
     def get_training_data(self, batch_size=None):

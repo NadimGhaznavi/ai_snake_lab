@@ -19,6 +19,7 @@ from ai_snake_lab.constants.DColors import DColor
 
 
 MAX_DATA_POINTS = Plot.MAX_DATA_POINTS
+AVG_DIVISOR = Plot.AVG_DIVISOR
 
 
 class LabPlot(PlotWidget):
@@ -80,7 +81,7 @@ class LabPlot(PlotWidget):
 
         # Add an average plot over 20 to wash out the spikes and identify when the
         # AI is maxing out.
-        window = max(1, len(reduced_values) // 20)
+        window = max(1, len(reduced_values) // AVG_DIVISOR)
         # e.g., 5% smoothing window
         if len(reduced_values) > window:
             smoothed = [

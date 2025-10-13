@@ -86,7 +86,7 @@ class AISim(App):
         self.game_board = GameBoard(20, id=DLayout.GAME_BOARD)
         self.snake_game = SnakeGame(game_board=self.game_board, id=DLayout.GAME_BOARD)
         self.epsilon_algo = EpsilonAlgo(seed=DSim.RANDOM_SEED)
-        self.agent = AIAgent(self.epsilon_algo, seed=DSim.RANDOM_SEED)
+        self.agent = AIAgent(epsilon_algo=self.epsilon_algo, seed=DSim.RANDOM_SEED)
 
         # A dictionary to hold runtime statistics
         self.stats = {
@@ -248,7 +248,7 @@ class AISim(App):
         # Highscores
         yield Vertical(
             Label(
-                f"   [b #3e99af]{DLabel.GAME:6s}{DLabel.SCORE:6s}       {DLabel.TIME:10s}[/]"
+                f"[b #3e99af]{DLabel.GAME:>7s}{DLabel.SCORE:>8s}{DLabel.TIME:>13s}[/]"
             ),
             Log(highlight=False, auto_scroll=True, id=DLayout.HIGHSCORES),
             id=DLayout.HIGHSCORES_BOX,
@@ -328,6 +328,9 @@ class AISim(App):
             # Reset the neural network's learned weights
             model = self.agent.model()
             model.reset_parameters()
+
+            # Clear the ReplayMemory's runtime DB
+            self.agent.memory.clear_runtime_data()
 
             # Signal thread to stop
             self.stop_event.set()
@@ -433,7 +436,7 @@ class AISim(App):
                 highscore = score
                 elapsed_secs = (datetime.now() - start_time).total_seconds()
                 runtime_str = minutes_to_uptime(elapsed_secs)
-                highscores.write_line(f"{epoch:6d} {score:6d} {runtime_str:>12s}")
+                highscores.write_line(f"{epoch:7d} {score:7d} {runtime_str:>12s}")
 
             # Update the highscore and score on the game box
             game_box.border_subtitle = (
@@ -529,11 +532,28 @@ def minutes_to_uptime(seconds: int):
     minutes, seconds = divmod(minutes, 60)
 
     if days > 0:
+        if seconds < 10:
+            seconds = f" {seconds}"
+        if minutes < 10:
+            minutes = f" {minutes}"
+        if hours < 10:
+            hours = f" {hours}"
         return f"{days}d {hours}h {minutes}m"
+
     elif hours > 0:
+        if seconds < 10:
+            seconds = f" {seconds}"
+        if minutes < 10:
+            minutes = f" {minutes}"
         return f"{hours}h {minutes}m"
+
     elif minutes > 0:
+        if seconds < 10:
+            seconds = f" {seconds}"
+        if minutes < 10:
+            return f" {minutes}m {seconds}s"
         return f"{minutes}m {seconds}s"
+
     else:
         return f"{seconds}s"
 

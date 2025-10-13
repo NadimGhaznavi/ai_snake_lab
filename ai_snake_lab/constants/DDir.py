@@ -15,4 +15,5 @@ class DDir(ConstGroup):
     """Directory Names"""
 
     AI_SNAKE_LAB: str = "ai_snake_lab"
+    DOT: str = "."
     UTILS: str = "utils"

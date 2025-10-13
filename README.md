@@ -74,6 +74,14 @@ ai-snake-lab
 
 ---
 
+# Limitations
+
+Because the simulation runs in a Textual TUI, terminal resizing and plot redraws can subtly affect the simulation timing. As a result, highscore achievements may appear at slightly different game numbers across runs. This behavior is expected and does not indicate a bug in the AI logic.
+
+If you have a requirement to make simulation runs repeatable, drop me a note and I can implement a **headless mode** where the simulation runs in a separate process outside of Textual.
+
+---
+
 # Acknowledgements
 
 The original code for this project was based on a YouTube tutorial, [Python + PyTorch + Pygame Reinforcement Learning – Train an AI to Play Snake](https://www.youtube.com/watch?v=L8ypSXwyBds) by Patrick Loeber. You can access his original code [here](https://github.com/patrickloeber/snake-ai-pytorch) on GitHub. Thank you Patrick!!! You are amazing!!!! This project is a port of the pygame and matplotlib solution.

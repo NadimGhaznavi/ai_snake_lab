@@ -18,4 +18,6 @@ class Plot(ConstGroup):
     AVERAGE: str = "average"
     SLIDING: str = "sliding"
 
-    MAX_DATA_POINTS: int = 100  # Maximum number of data points in a plot
+    # The average is calculated by dividing the MAX_DATA_POINTS by this number
+    AVG_DIVISOR: int = 40
+    MAX_DATA_POINTS: int = 200  # Maximum number of data points in a plot
