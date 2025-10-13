@@ -490,7 +490,7 @@ class AISim(App):
                         training_game_id.update(DLabel.N_SLASH_A)
                     else:
                         training_game_id.update(str(game_id))
-                # Do the replay memory training
+                # Do the long training
                 agent.train_long_memory()
 
                 # Reset the game
@@ -504,8 +504,10 @@ class AISim(App):
                     cur_epsilon.update("0.0000")
                 else:
                     cur_epsilon.update(str(round(cur_epsilon_value, 4)))
+
                 # Update the number of stored memories
-                cur_stored_games.update(str(self.agent.memory.get_num_games()))
+                stored_games = agent.memory.get_num_games()
+                cur_stored_games.update(f"{stored_games:,}")
                 # Update the stats object
                 self.stats[DSim.GAME_SCORE][DSim.GAME_NUM].append(epoch)
                 self.stats[DSim.GAME_SCORE][DSim.GAME_SCORE].append(score)
