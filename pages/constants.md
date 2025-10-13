@@ -1,5 +1,5 @@
 ---
-Constants
+Title: AI Snake Lab - Constants
 ---
 
 # Introduction
