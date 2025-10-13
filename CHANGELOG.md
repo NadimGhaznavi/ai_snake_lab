@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased] - 2025-10-13
+
+### Changed
+- Linear Model, `ModelL`, changes:
+  - Formatting improvement of the highscores.
+  - Increased the linear model's (`ModelL`) learning rate.
+  - Added an additional hidden layer to the linear model.
+  - Decreased the dropout value from 0.2 to 0.1.
+
+---
+
 ## [0.7.0] - 2025-10-13 
 
 ### Added
