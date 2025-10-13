@@ -7,9 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [0.8.1] - 2025-10-13
 
-## Added
+### Added
 - Show the number of frames for the *long training phase*, when `mem_type` is *random frames*.
 
 ### Fixed
@@ -21,7 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Set the *stored games* back to zero when the *restart* button is pressed
 - Clear the data from the *games* and *frames* SQLite3 tables when the *restart* button is pressed.
 - Format the number of stored games (add commas) when they are large.
-
 
 ---
 
