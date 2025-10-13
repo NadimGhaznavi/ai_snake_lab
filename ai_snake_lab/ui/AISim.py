@@ -326,7 +326,8 @@ class AISim(App):
             game_score_plot.clear()
 
             # Reset the neural network's learned weights
-            self.agent.model.reset_parameters()
+            model = self.agent.model()
+            model.reset_parameters()
 
             # Signal thread to stop
             self.stop_event.set()

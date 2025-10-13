@@ -77,52 +77,44 @@ class AITrainer:
             )
 
     def train_step(self, state, action, reward, next_state, game_over):
-        # Convert inputs to tensors
+        # Convert to tensors
         state = torch.tensor(np.array(state), dtype=torch.float)
         next_state = torch.tensor(np.array(next_state), dtype=torch.float)
-        action = torch.tensor(np.array(action), dtype=torch.long)
-        reward = torch.tensor(np.array(reward), dtype=torch.float)
-        done = torch.tensor(np.array(game_over), dtype=torch.bool)
+        action = torch.tensor(action, dtype=torch.long)
+        reward = torch.tensor(reward, dtype=torch.float)
 
-        # Handle single transition case → batch size 1
+        # Add a batch dimension if needed
         if len(state.shape) == 1:
-            state = state.unsqueeze(0)
-            next_state = next_state.unsqueeze(0)
-            action = action.unsqueeze(0)
-            reward = reward.unsqueeze(0)
-            done = done.unsqueeze(0)
+            state = torch.unsqueeze(state, 0)
+            next_state = torch.unsqueeze(next_state, 0)
+            action = torch.unsqueeze(action, 0)
+            reward = torch.unsqueeze(reward, 0)
+            game_over = (game_over,)
 
-        # Predicted Q-values (main network)
-        pred = self.model(state)  # shape: [batch_size, n_actions]
+        # Predicgted Q-values (main network)
+        pred = self.model(state)
 
-        # Compute target Q-values
-        with torch.no_grad():
-            next_Q_values = self.target_model(next_state)
-            max_next_Q = next_Q_values.max(dim=1)[0]  # shape: [batch_size]
-            target_Q = reward + self.gamma * max_next_Q * (~done)  # shape: [batch_size]
+        # Compute target Q-values (use target network)
+        target = pred.clone().detach()
 
-        # Gather predicted Q-values
-        action_indices = torch.argmax(action, dim=1)  # [batch_size]
-        pred_Q = pred.gather(1, action_indices.unsqueeze(1))  # [batch_size, 1]
-        pred_Q = pred_Q.view(-1)  # [batch_size]
+        for idx in range(len(game_over)):
+            Q_new = reward[idx]
+            if not game_over[idx][0]:
+                Q_next = torch.max(self.target_model(next_state[idx]))
+                Q_new = reward[idx] + self.gamma * Q_next
+            target[idx][action[idx].argmax().item()] = Q_new  # Update Q value
 
-        # Target Q-values
-        target_Q = target_Q.view(-1)  # [batch_size]
-
-        # Now compute loss
-        loss = self.criterion(pred_Q, target_Q)
-
-        # Backpropagate
+        # Compute loss and backprop
         self.optimizer.zero_grad()
+        loss = self.criterion(target, pred)
         loss.backward()
 
-        # Gradient clipping for stability
+        # Gradient clipping
         torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
-        self.optimizer.step()
 
-        # Periodic soft update of target model
+        self.optimizer.step()  # Adjust the weights
+
+        # Update target model periodically (soft update each N steps)
         self.update_counter += 1
         if self.update_counter % self.target_update_freq == 0:
             self.soft_update_target()
-
-        return loss.item()

@@ -55,29 +55,19 @@ class AIAgent:
         return self.trainer.get_optimizer()
 
     def load_training_data(self):
-        # Ask ReplayMemory for data
-        training_data = self.memory.get_training_data(n_games=1)
-        if not training_data:
-            # Use "-1" to indicate that there is no available training data
+        # Ask ReplayMemory for a single game (vectorized)
+        batch, game_id = self.memory.get_training_data()
+        if batch is None:
             self.game_id(MEM.NO_DATA)
-            return  # either no memory or user chose None
+            return
 
-        # Initialize...
-        self._training_data = []
-        for (
-            game_id,
-            frame_index,
-            state,
-            action,
-            reward,
-            next_state,
-            done,
-            *_,
-        ) in training_data:
-            self.game_id(game_id)
-            self._training_data.append(
-                (frame_index, state, action, reward, next_state, [done])
-            )
+        states, actions, rewards, next_states, dones = batch
+
+        # Update current game id for TUI
+        self.game_id(game_id)
+
+        # Store the training data in the agent (without frame index)
+        self._training_data = list(zip(states, actions, rewards, next_states, dones))
 
     def model_type(self, model_type=None):
         if model_type is not None:
@@ -101,22 +91,40 @@ class AIAgent:
     def set_optimizer(self, optimizer):
         self.trainer.set_optimizer(optimizer)
 
-    def train_long_memory(self):
-
+    def train_long_memory(self, batch_size=64):
         # No training data is available
         if self.game_id() == MEM.NO_DATA:
             return
 
-        for (
-            frame_index,
-            state,
-            action,
-            reward,
-            next_state,
-            done,
-            *_,
-        ) in self.training_data():
-            self.trainer.train_step(state, action, reward, next_state, [done])
+        training_batch = self.training_data()
+        if not training_batch:
+            return
+
+        states, actions, rewards, next_states, dones = zip(*training_batch)
+        n_samples = len(states)
+        total_loss = 0.0
+
+        # Slice into mini-batches
+        for start in range(0, n_samples, batch_size):
+            end = min(start + batch_size, n_samples)
+            batch_states = states[start:end]
+            batch_actions = actions[start:end]
+            batch_rewards = rewards[start:end]
+            batch_next_states = next_states[start:end]
+            batch_dones = dones[start:end]
+
+            # Vectorized training step
+            loss = self.trainer.train_step(
+                batch_states,
+                batch_actions,
+                batch_rewards,
+                batch_next_states,
+                batch_dones,
+            )
+            total_loss += loss
+
+        avg_loss = total_loss / (n_samples / batch_size)
+        return avg_loss
 
     def train_short_memory(self, state, action, reward, next_state, done):
         # Always train on the current frame

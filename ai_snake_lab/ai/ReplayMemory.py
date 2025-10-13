@@ -142,69 +142,69 @@ class ReplayMemory:
         self.cursor.execute("SELECT id FROM games")
         all_ids = [row[0] for row in self.cursor.fetchall()]
         if not all_ids or len(all_ids) < self.min_games:
-            return False
+            return [], MEM.NO_DATA  # no games available
 
         rand_id = random.choice(all_ids)
         self.cursor.execute(
-            "SELECT game_id, frame_index, state, action, reward, next_state, done "
+            "SELECT state, action, reward, next_state, done "
             "FROM frames WHERE game_id = ? ORDER BY frame_index ASC",
             (rand_id,),
         )
         rows = self.cursor.fetchall()
         if not rows:
-            return False
+            return [], rand_id  # game exists but no frames
 
         game = [
             (
-                int(game_id),
-                int(frame_index),
                 pickle.loads(state_blob),
                 pickle.loads(action),
                 float(reward),
                 pickle.loads(next_state_blob),
                 bool(done),
             )
-            for game_id, frame_index, state_blob, action, reward, next_state_blob, done in rows
+            for state_blob, action, reward, next_state_blob, done in rows
         ]
-        return game
+        return game, rand_id
 
     def get_num_games(self):
         """Return number of games stored in the database."""
         self.cursor.execute("SELECT COUNT(*) FROM games")
         return self.cursor.fetchone()[0]
 
-    def get_training_data(self, n_games=None, n_frames=None):
-        """
-        Returns a list of transitions for training based on the current memory type.
-
-        - n_games: used for RANDOM_GAME (how many full games to sample)
-        - n_frames: used for SHUFFLE (how many frames to sample)
-        - Returns empty list if memory type is NONE or if database/memory is empty
-        """
+    def get_training_data(self, batch_size=None):
         mem_type = self.mem_type()
 
-        # Replay memory has been disabled
         if mem_type == MEM_TYPE.NONE:
-            return []
+            return None, MEM.NO_DATA  # No data available
 
-        # Return a random game i.e. ordered frames
+        # RANDOM_GAME mode: return full ordered frames from one random game
         elif mem_type == MEM_TYPE.RANDOM_GAME:
-            n_games = n_games or 1
-            training_data = []
-            for _ in range(n_games):
-                game = self.get_random_game()
-                if game:
-                    training_data.extend(game)
-            return training_data
+            frames, game_id = self.get_random_game()
+            if not frames:  # no frames available
+                return None, MEM.NO_DATA
+            training_data = frames
+            current_game_id = game_id
 
-        # Return a totally random set of frames
+        # SHUFFLE mode: return a random set of frames
         elif mem_type == MEM_TYPE.SHUFFLE:
-            n_frames = n_frames or self.get_average_game_length()
-            frames = self.get_random_frames(n=n_frames)
-            return frames
+            batch_size = batch_size or self.get_average_game_length() or 32
+            frames = self.get_random_frames(n=batch_size)
+            if not frames:  # no frames available
+                return None, MEM.NO_DATA
+            training_data = frames
+            current_game_id = MEM.NO_DATA
 
         else:
             raise ValueError(f"Unknown memory type: {mem_type}")
+
+        # Split into arrays for vectorized training
+        states = [d[0] for d in training_data]
+        actions = [d[1] for d in training_data]
+        rewards = [d[2] for d in training_data]
+        next_states = [d[3] for d in training_data]
+        dones = [d[4] for d in training_data]
+
+        return (states, actions, rewards, next_states, dones), current_game_id
 
     def init_db(self):
         # Create the games table

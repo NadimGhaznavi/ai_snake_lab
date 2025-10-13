@@ -17,11 +17,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Plotting Widget:
   - Renamed the plotting widget from `Db4EPlot` to `LabPlot`
   - Removed the code that averaged results since I'm using a sliding method instead.
+- Added a *target model* that keeps a frozen copy of the main network. This prevents *chasing moving targets* instability issues.
+- Added a *soft update* (τ=0.01) to blend weights in slowly. This smooths the learning curve.
+- Replaced MSE with Huber loss. It's less sensitive to large TD errors (outliers).
+- Added *gradient clipping* to prevents exploding gradients.
+- Added an update frequency (target_update_freq=100) to sync target every ~100 frames
+- Vectorize the data coming out of the ReplayMemory leading to a **HUGE** improvement in speed.
+- Adjust gradients on the batch, not single frames for *better* learning and smoother gradients
+- Return the loss for future plotting.
+
 
 ### Fixed
-- Cleared the *Plot Widget* when the *Restart* button is pressedn
+- Cleared the *Plot Widget* when the *Restart* button is pressed
 - Reset the neural network model's learned weights when the *Restart* button is pressed.
-
 
 ---
 
