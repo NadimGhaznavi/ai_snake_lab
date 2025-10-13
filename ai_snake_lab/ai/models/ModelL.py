@@ -38,6 +38,7 @@ class ModelL(nn.Module):
     def forward(self, x):
         x = self.input_block(x)
         x = self.hidden_block(x)
+        x = self.hidden_block(x)
         x = self.dropout_block(x)
         x = self.output_block(x)
         return x
