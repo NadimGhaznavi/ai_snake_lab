@@ -392,14 +392,16 @@ class AISim(App):
             self.update_settings()
 
     def set_defaults(self):
-        initial_epsilon = self.query_one(f"#{DLayout.EPSILON_INITIAL}", Input)
-        initial_epsilon.value = str(DEpsilon.EPSILON_INITIAL)
-        epsilon_decay = self.query_one(f"#{DLayout.EPSILON_DECAY}", Input)
-        epsilon_decay.value = str(DEpsilon.EPSILON_DECAY)
-        epsilon_min = self.query_one(f"#{DLayout.EPSILON_MIN}", Input)
-        epsilon_min.value = str(DEpsilon.EPSILON_MIN)
-        mem_type = self.query_one(f"#{DLayout.MEM_TYPE}", Select)
-        mem_type.value = MEM_TYPE.RANDOM_GAME
+        self.query_one(f"#{DLayout.EPSILON_INITIAL}", Input).value = str(
+            DEpsilon.EPSILON_INITIAL
+        )
+        self.query_one(f"#{DLayout.EPSILON_DECAY}", Input).value = str(
+            DEpsilon.EPSILON_DECAY
+        )
+        self.query_one(f"#{DLayout.EPSILON_MIN}", Input).value = str(
+            DEpsilon.EPSILON_MIN
+        )
+        self.query_one(f"#{DLayout.MEM_TYPE}", Select).value = MEM_TYPE.RANDOM_GAME
 
         # The "default" learning rate is model specific
         cur_model_type = self.query_one(f"#{DLayout.MODEL_TYPE}", Select).value
@@ -579,6 +581,11 @@ class AISim(App):
         if memory_type.value == MEM_TYPE.SHUFFLE:
             training_label = self.query_one(f"#{DLayout.TRAINING_ID_LABEL}", Label)
             training_label.update(DLabel.RANDOM_FRAMES)
+
+        # Get the minimum epsilon setting and pass it to the EpsilonAlgo
+        self.agent.epsilon_algo.epsilon_min(
+            float(self.query_one(f"#{DLayout.EPSILON_MIN}", Input).value)
+        )
 
 
 # Helper function

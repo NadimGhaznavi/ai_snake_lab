@@ -9,6 +9,17 @@ The the project's [CHANGELOG](https://snakelab.osoyalce.com/CHANGELOG.html) for 
 
 --- 
 
+## [Unreleased]
+
+### Added
+- A page outining the notation used in Sutton's RL Book.
+
+### Changed
+- The learning rate default value for the RNN.
+
+### Fixed
+- Passed *minimum epsilon* from the *settings* to the actual `EpsilonAlgo` in `AISim:update_settings()`.
+
 ## [0.9.0] - 2025-10-13
 
 ### Changed

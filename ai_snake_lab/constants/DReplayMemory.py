@@ -37,5 +37,5 @@ class MEM_TYPE(ConstGroup):
 class MEM(ConstGroup):
     """Replay memory constants"""
 
-    MIN_GAMES: int = 20
+    MIN_GAMES: int = 200
     NO_DATA: int = -1
