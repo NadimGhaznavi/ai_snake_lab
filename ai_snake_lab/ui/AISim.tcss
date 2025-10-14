@@ -1,7 +1,7 @@
 Screen {
     layout: grid;
     grid-size: 3 5;
-    grid-rows: 3 9 6 9 22;
+    grid-rows: 3 9 6 9 24;
     grid-columns: 32 46 36;
 }
 
@@ -58,12 +58,26 @@ Screen {
 #filler_3 {
 }
 
-#game_score_plot {
+TabbedPlots {
     column-span: 3;
-    border: round #0c323e;
-    height: 17;
+    height: 19;
     width: 114;
     background: black
+}
+
+#game_score_plot {
+    height: 15;
+    width: 100%;
+}
+
+#highscore_plot {
+    height: 15;
+    width: 100%;
+}
+
+#loss_plot {
+    height: 15;
+    width: 100%;
 }
 
 #legend {

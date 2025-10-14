@@ -14,7 +14,7 @@ from ai_snake_lab.utils.ConstGroup import ConstGroup
 class DModelRNN(ConstGroup):
     """RNN Model constants"""
 
-    LEARNING_RATE: float = 0.0007  # Default: Learning rate
+    LEARNING_RATE: float = 0.00003  # Default: Learning rate
     HIDDEN_SIZE: int = 150  # Default: The number of nodes in the hidden layer
     RNN_LAYERS: int = 5  # Default: Number of RNN layers
     P_VALUE: float = 0.1  # Default: Dropout layer value - 20%

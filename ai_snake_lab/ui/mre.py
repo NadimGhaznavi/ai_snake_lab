@@ -4,6 +4,16 @@ from textual.widgets import TabbedContent
 
 
 class TabbedApp(App[None]):
+
+    CSS = """
+    TabbedContent {
+        height: 100%;
+    }
+    #plot_a, #plot_b {
+        height: 20;
+    }
+"""
+
     def compose(self) -> ComposeResult:
         with TabbedContent("Plot A", "Plot B"):
             yield PlotWidget(id="plot_a")

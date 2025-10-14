@@ -227,7 +227,6 @@ class ReplayMemory:
         next_states = [d[3] for d in training_data]
         dones = [d[4] for d in training_data]
 
-        print(f"metadata {metadata}")
         return (states, actions, rewards, next_states, dones), metadata
 
     def init_db(self):

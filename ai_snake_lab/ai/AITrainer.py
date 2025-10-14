@@ -36,6 +36,7 @@ class AITrainer:
         self.tau = 0.01  # For soft target updates
         self.update_counter = 0
         self.target_update_freq = 100  # Every N training steps
+        self._epoch_losses = []
 
     def get_optimizer(self):
         return self.optimizer
@@ -43,23 +44,24 @@ class AITrainer:
     def set_optimizer(self, optimizer):
         self.optimizer = optimizer
 
+    def set_learning_rate(self, learning_rate):
+        # NOTE: You need to set the model before you set the learning rate!
+        self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
+
     def set_model(self, model):
         self.model = model
-
-        # The learning rate needs to be adjusted for the model type
-        if isinstance(model, ModelL):
-            learning_rate = DModelL.LEARNING_RATE
-        elif isinstance(model, ModelRNN):
-            learning_rate = DModelRNN.LEARNING_RATE
-        else:
-            raise ValueError(f"Unknown model type: {type(model)}")
-
-        self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
 
         # Initialize target network as a frozen copy
         self.target_model = copy.deepcopy(self.model)
         for param in self.target_model.parameters():
             param.requires_grad = False
+
+    def get_epoch_loss(self):
+        if not self._epoch_losses:
+            return 0.0
+        avg_loss = sum(self._epoch_losses) / len(self._epoch_losses)
+        self._epoch_losses = []
+        return avg_loss
 
     def get_optimizer(self):
         return self.optimizer
@@ -125,4 +127,6 @@ class AITrainer:
         if self.update_counter % self.target_update_freq == 0:
             self.soft_update_target()
 
+        # Keep the step loss value
+        self._epoch_losses.append(loss.item())
         return loss.item()

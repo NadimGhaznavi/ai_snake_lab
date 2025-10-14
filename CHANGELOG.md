@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+--- 
+
+## [Unreleased]
+
+### Changed
+- Added formatting for large numbers to the *stored games* and *highscores game number*.
+- Added a *Tabbed Plots* widget.
+  - Moved the *Game Score* plot widget into the new *Tabbed Plots* widget.
+  - Added a *Highscores* plot.
+  - Added a *Loss* plot.
+- Based on the shiny new *Loss* plot, tuned the *learning rate* for the linear and RNN models.
+- Added a *Learning Rate* input to the *configuration settings*.
+  - Wired the sane default learning rate values (based on the model selection) so that the correct one is loaded when the *Defaults* button is pressed.
+  - Modified the `AITrainer` to capture the loss at the end of each *train step* and return an average of these values at the end of an epoch with a new `get_epoch_loss()` function.
+- Added additional constants to the `DLabels` and `Dlayouts` files to support the new features.
+
+### Removed
+- Removed the `LabPlot` widget. It has been replaced by the new `TabbedPlots` widget.
+
 ---
 
 ## [0.8.1] - 2025-10-13

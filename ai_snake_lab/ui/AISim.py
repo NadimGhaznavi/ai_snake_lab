@@ -35,7 +35,7 @@ from ai_snake_lab.ai.EpsilonAlgo import EpsilonAlgo
 from ai_snake_lab.game.GameBoard import GameBoard
 from ai_snake_lab.game.SnakeGame import SnakeGame
 
-from ai_snake_lab.ui.LabPlot import LabPlot
+from ai_snake_lab.ui.TabbedPlots import TabbedPlots
 
 
 SNAKE_LAB_THEME = Theme(
@@ -165,6 +165,18 @@ class AISim(App):
             ),
             Horizontal(
                 Label(
+                    f"{DLabel.LEARNING_RATE}",
+                    classes=DLayout.LABEL_SETTINGS,
+                ),
+                Input(
+                    restrict=f"[0-9]*.[0-9]*",
+                    compact=True,
+                    id=DLayout.LEARNING_RATE,
+                    classes=DLayout.INPUT_10,
+                ),
+            ),
+            Horizontal(
+                Label(
                     f"{DLabel.MODEL_TYPE}",
                     classes=DLayout.LABEL_SETTINGS_19,
                 ),
@@ -262,20 +274,15 @@ class AISim(App):
         yield Static(id=DLayout.FILLER_2)
 
         # The game score plot
-        yield LabPlot(
-            title=DLabel.GAME_SCORE,
-            id=DLayout.GAME_SCORE_PLOT,
-            thin_method=Plot.SLIDING,
-        )
+        yield TabbedPlots(id=DLayout.TABBED_PLOTS)
 
     def on_mount(self):
+
         # Configuration defaults
         self.set_defaults()
-        game_score_plot = self.query_one(f"#{DLayout.GAME_SCORE_PLOT}", LabPlot)
-        game_score_plot.set_xlabel(DLabel.GAME_NUM)
-        game_score_plot.set_ylabel(DLabel.GAME_SCORE)
         settings_box = self.query_one(f"#{DLayout.SETTINGS_BOX}", Vertical)
         settings_box.border_title = DLabel.SETTINGS
+
         # Runtime values
         highscore_box = self.query_one(f"#{DLayout.HIGHSCORES_BOX}", Vertical)
         highscore_box.border_title = DLabel.HIGHSCORES
@@ -288,6 +295,10 @@ class AISim(App):
         # Register and set the theme
         self.register_theme(SNAKE_LAB_THEME)
         self.theme = DLayout.SNAKE_LAB_THEME
+
+        # Add a starting point of (0,0) to the highscores plot
+        plots = self.query_one(f"#{DLayout.TABBED_PLOTS}", TabbedPlots)
+        plots.add_highscore_data(0, 0)
 
     def on_quit(self):
         if self.running == DSim.RUNNING:
@@ -325,9 +336,8 @@ class AISim(App):
             highscores.clear()
 
             # Clear the plot data
-            game_score_plot = self.query_one(f"#{DLayout.GAME_SCORE_PLOT}", LabPlot)
-            game_score_plot.clear_data()
-            game_score_plot.clear()
+            plots = self.query_one(f"#{DLayout.TABBED_PLOTS}", TabbedPlots)
+            plots.clear_data()
 
             # Reset the neural network's learned weights
             model = self.agent.model()
@@ -340,6 +350,7 @@ class AISim(App):
             # Clear the ReplayMemory's runtime DB
             self.agent.memory.clear_runtime_data()
 
+            ## Simulation loop thread control
             # Signal thread to stop
             self.stop_event.set()
             # Unpause so we're not blocking
@@ -389,8 +400,17 @@ class AISim(App):
         epsilon_min.value = str(DEpsilon.EPSILON_MIN)
         mem_type = self.query_one(f"#{DLayout.MEM_TYPE}", Select)
         mem_type.value = MEM_TYPE.RANDOM_GAME
-        model_type = self.query_one(f"#{DLayout.MODEL_TYPE}", Select)
-        model_type.value = DModelRNN.MODEL
+
+        # The "default" learning rate is model specific
+        cur_model_type = self.query_one(f"#{DLayout.MODEL_TYPE}", Select).value
+        learning_rate = self.query_one(f"#{DLayout.LEARNING_RATE}", Input)
+        if cur_model_type == DModelL.MODEL:
+            learning_rate_value = f"{DModelL.LEARNING_RATE:.6f}"
+        elif cur_model_type == DModelRNN.MODEL:
+            learning_rate_value = f"{DModelRNN.LEARNING_RATE:.6f}"
+        learning_rate.value = str(learning_rate_value)
+
+        # Move delay
         move_delay = self.query_one(f"#{DLayout.MOVE_DELAY}", Input)
         move_delay.value = str(DDef.MOVE_DELAY)
 
@@ -419,7 +439,7 @@ class AISim(App):
         highscores = self.query_one(f"#{DLayout.HIGHSCORES}", Log)
         cur_epsilon = self.query_one(f"#{DLayout.CUR_EPSILON}", Label)
         cur_stored_games = self.query_one(f"#{DLayout.STORED_GAMES}", Label)
-        game_score_plot = self.query_one(f"#{DLayout.GAME_SCORE_PLOT}", LabPlot)
+        plots = self.query_one(f"#{DLayout.TABBED_PLOTS}", TabbedPlots)
         cur_runtime = self.query_one(f"#{DLayout.RUNTIME}", Label)
         training_game_id = self.query_one(f"#{DLayout.CUR_TRAINING_GAME_ID}", Label)
         cur_move_delay = self.query_one(f"#{DLayout.MOVE_DELAY}", Input)
@@ -444,7 +464,8 @@ class AISim(App):
                 highscore = score
                 elapsed_secs = (datetime.now() - start_time).total_seconds()
                 runtime_str = minutes_to_uptime(elapsed_secs)
-                highscores.write_line(f"{epoch:7d}{score:7d}{runtime_str:>13s}")
+                highscores.write_line(f"{epoch:7,d}{score:7d}{runtime_str:>13s}")
+                plots.add_highscore_data(epoch, score)
 
             # Update the highscore and score on the game box
             game_box.border_subtitle = (
@@ -465,7 +486,7 @@ class AISim(App):
             else:
                 # Increment the epoch and update the game box widget
                 epoch += 1
-                game_box.border_title = f"{DLabel.GAME} #{epoch}"
+                game_box.border_title = f"{DLabel.GAME} {epoch:,}"
 
                 # Remember the last move, get's passed to the ReplayMemory
                 agent.memory.append(
@@ -512,12 +533,16 @@ class AISim(App):
                 self.stats[DSim.GAME_SCORE][DSim.GAME_NUM].append(epoch)
                 self.stats[DSim.GAME_SCORE][DSim.GAME_SCORE].append(score)
                 # Update the plot object
-                game_score_plot.add_data(epoch, score)
-                game_score_plot.lab_plot()
+                plots.add_game_score_data(epoch, score)
+
                 # Update the runtime widget
                 elapsed_secs = (datetime.now() - start_time).total_seconds()
                 runtime_str = minutes_to_uptime(elapsed_secs)
                 cur_runtime.update(runtime_str)
+
+                # Update the loss plot
+                epoch_loss_avg = agent.trainer.get_epoch_loss()
+                plots.add_loss_data(epoch=epoch, loss=epoch_loss_avg)
 
     def start_thread(self):
         self.simulator_thread.start()
@@ -537,6 +562,10 @@ class AISim(App):
         cur_model_type.update(MODEL_TYPE[model_type.value])
         # Also pass it to the Agent
         self.agent.model_type(model_type=model_type.value)
+
+        # Now that we've set the model, we can pass in the learning rate
+        learning_rate = self.query_one(f"#{DLayout.LEARNING_RATE}", Input).value
+        self.agent.trainer.set_learning_rate(float(learning_rate))
 
         # Get the memory type from the settings, put it into the runtime
         memory_type = self.query_one(f"#{DLayout.MEM_TYPE}", Select)

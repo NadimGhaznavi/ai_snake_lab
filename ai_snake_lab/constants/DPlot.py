@@ -20,4 +20,5 @@ class Plot(ConstGroup):
 
     # The average is calculated by dividing the MAX_DATA_POINTS by this number
     AVG_DIVISOR: int = 40
-    MAX_DATA_POINTS: int = 200  # Maximum number of data points in a plot
+    MAX_DATA_POINTS: int = 200  # Maximum number of data points in the gamescore plot
+    MAX_LOSS_DATA_POINTS: int = 75  # Max number of data points in the loss plot
