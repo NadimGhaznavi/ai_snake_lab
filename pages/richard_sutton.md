@@ -27,12 +27,12 @@ Title: Richard S. Sutton
 
 # Interviews
 
-* [The New Path for AI](https://www.youtube.com/watch?v=NvfK1TkXmOQ) - January 2025
-* [NUS120 Distinguished Speaker Series](https://www.youtube.com/watch?v=IKFqk3fjESk) - July 2025
+- [The New Path for AI](https://www.youtube.com/watch?v=NvfK1TkXmOQ) - January 2025
+- [NUS120 Distinguished Speaker Series](https://www.youtube.com/watch?v=IKFqk3fjESk) - July 2025
 
 ---
 
 # Writing
 
-* [Reinforcement Learning: An Introduction](http://www.incompleteideas.net/book/RLbook2020trimmed.pdf)
-* [The Bitter Lesson](http://www.incompleteideas.net/IncIdeas/BitterLesson.html)
+- [Reinforcement Learning: An Introduction](http://www.incompleteideas.net/book/RLbook2020trimmed.pdf) - [Notation](/pages/sutton_notation.html) 
+- [The Bitter Lesson](http://www.incompleteideas.net/IncIdeas/BitterLesson.html)
