@@ -127,7 +127,7 @@ class AIAgent:
 
         if self.dynamic_training():
             loops = max(
-                1, min(self.epoch() // 250, DAIAgent.MAX_ADAPTIVE_TRAINING_LOOPS)
+                1, min(self.epoch() // 250, DAIAgent.MAX_DYNAMIC_TRAINING_LOOPS)
             )
         else:
             loops = 1

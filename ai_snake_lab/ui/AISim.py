@@ -571,9 +571,7 @@ class AISim(App):
                 plots.add_loss_data(epoch=epoch, loss=epoch_loss_avg)
 
                 # Update the training loops value
-                loops = max(
-                    1, min(self.epoch() // 250, DAIAgent.MAX_ADAPTIVE_TRAINING_LOOPS)
-                )
+                loops = max(1, min(epoch // 250, DAIAgent.MAX_DYNAMIC_TRAINING_LOOPS))
                 self.query_one(f"#{DLayout.TRAINING_LOOPS}", Label).update(loops)
 
     def start_thread(self):
