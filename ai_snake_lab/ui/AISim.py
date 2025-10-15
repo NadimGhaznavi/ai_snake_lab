@@ -177,11 +177,11 @@ class AISim(App):
             ),
             Horizontal(
                 Label(
-                    f"{DLabel.ADAPTIVE_TRAINING}",
+                    f"{DLabel.DYNAMIC_TRAINING}",
                     classes=DLayout.LABEL_SETTINGS,
                 ),
                 Checkbox(
-                    id=DLayout.ADAPTIVE_TRAINING,
+                    id=DLayout.DYNAMIC_TRAINING,
                     classes=DLayout.INPUT_10,
                     compact=True,
                 ),
@@ -424,7 +424,7 @@ class AISim(App):
         learning_rate.value = str(learning_rate_value)
 
         # Adaptive Memory
-        self.query_one(f"#{DLayout.ADAPTIVE_TRAINING}", Checkbox).value = True
+        self.query_one(f"#{DLayout.DYNAMIC_TRAINING}", Checkbox).value = True
 
         # Move delay
         move_delay = self.query_one(f"#{DLayout.MOVE_DELAY}", Input)
@@ -595,7 +595,7 @@ class AISim(App):
         self.agent.memory.mem_type(memory_type.value)
         # Adaptive memory
         self.agent.adaptive_training(
-            self.query_one(f"#{DLayout.ADAPTIVE_TRAINING}", Checkbox).value
+            self.query_one(f"#{DLayout.DYNAMIC_TRAINING}", Checkbox).value
         )
 
         # Change the current settings from Game ID to Random Frames if we're using
