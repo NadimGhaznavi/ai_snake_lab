@@ -594,7 +594,7 @@ class AISim(App):
         # Also pass the selected memory type to the ReplayMemory object
         self.agent.memory.mem_type(memory_type.value)
         # Adaptive memory
-        self.agent.adaptive_training(
+        self.agent.dynamic_training(
             self.query_one(f"#{DLayout.DYNAMIC_TRAINING}", Checkbox).value
         )
 

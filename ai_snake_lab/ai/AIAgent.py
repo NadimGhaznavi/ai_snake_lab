@@ -33,13 +33,13 @@ class AIAgent:
         self._model_type = None
         self._num_frames = None
         self._seed = seed
-        self._adaptive_training = None
+        self._dynamic_training = None
         self._epoch = None
 
-    def adaptive_training(self, enable_flag=None):
+    def dynamic_training(self, enable_flag=None):
         if enable_flag is not None:
-            self._adaptive_training = enable_flag
-        return self._adaptive_training
+            self._dynamic_training = enable_flag
+        return self._dynamic_training
 
     def epoch(self, epoch=None):
         if epoch is not None:
@@ -125,7 +125,7 @@ class AIAgent:
 
         # Adaptive training
 
-        if self.adaptive_training():
+        if self.dynamic_training():
             loops = max(
                 1, min(self.epoch() // 250, DAIAgent.MAX_ADAPTIVE_TRAINING_LOOPS)
             )
