@@ -14,6 +14,8 @@ from ai_snake_lab.utils.ConstGroup import ConstGroup
 class MEM_TYPE(ConstGroup):
     """Replay memory constants"""
 
+    ADAPTIVE: str = "adaptive"
+    ADAPTIVE_LABEL: str = "Adaptive"
     NONE: str = "none"
     NONE_LABEL: str = "None"
     RANDOM_GAME: str = "random_game"
@@ -23,12 +25,14 @@ class MEM_TYPE(ConstGroup):
 
     MEM_TYPE_TABLE: dict = {
         NONE: NONE_LABEL,
+        ADAPTIVE: ADAPTIVE_LABEL,
         RANDOM_GAME: RANDOM_GAME_LABEL,
         SHUFFLE: SHUFFLE_LABEL,
     }
 
     MEMORY_TYPES: list = [
         (NONE_LABEL, NONE),
+        (ADAPTIVE_LABEL, ADAPTIVE),
         (RANDOM_GAME_LABEL, RANDOM_GAME),
         (SHUFFLE_LABEL, SHUFFLE),
     ]

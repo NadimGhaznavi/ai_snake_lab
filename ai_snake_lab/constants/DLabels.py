@@ -14,6 +14,7 @@ from ai_snake_lab.utils.ConstGroup import ConstGroup
 class DLabel(ConstGroup):
     """Human Readable Labels"""
 
+    ADAPTIVE_TRAINING: str = "Adaptive Training"
     APP_TITLE: str = "AI Snake Lab"
     AVERAGE: str = "Average"
     CURRENT: str = "Current"

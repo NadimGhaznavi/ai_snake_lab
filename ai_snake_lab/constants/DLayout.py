@@ -14,6 +14,7 @@ from ai_snake_lab.utils.ConstGroup import ConstGroup
 class DLayout(ConstGroup):
     """Layout fields used in the TUI"""
 
+    ADAPTIVE_TRAINING: str = "adaptive_training"
     BUTTON_BOX: str = "button_box"
     BUTTON_PAUSE: str = "button_pause"
     BUTTON_QUIT: str = "button_quit"

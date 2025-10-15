@@ -14,7 +14,7 @@ import sys, os
 from datetime import datetime, timedelta
 
 from textual.app import App, ComposeResult
-from textual.widgets import Label, Input, Button, Static, Log, Select
+from textual.widgets import Label, Input, Button, Static, Log, Select, Checkbox
 from textual.containers import Vertical, Horizontal
 from textual.theme import Theme
 
@@ -48,7 +48,7 @@ SNAKE_LAB_THEME = Theme(
     success="#A3BE8C",
     warning="#EBCB8B",
     error="#BF616A",
-    surface="black",
+    surface="#111111",
     panel="#000000",
     dark=True,
     variables={
@@ -177,14 +177,13 @@ class AISim(App):
             ),
             Horizontal(
                 Label(
-                    f"{DLabel.MODEL_TYPE}",
-                    classes=DLayout.LABEL_SETTINGS_19,
+                    f"{DLabel.ADAPTIVE_TRAINING}",
+                    classes=DLayout.LABEL_SETTINGS,
                 ),
-                Select(
-                    MODEL_TYPES,
+                Checkbox(
+                    id=DLayout.ADAPTIVE_TRAINING,
+                    classes=DLayout.INPUT_10,
                     compact=True,
-                    id=DLayout.MODEL_TYPE,
-                    allow_blank=False,
                 ),
             ),
             Horizontal(
@@ -196,6 +195,18 @@ class AISim(App):
                     MEM_TYPE.MEMORY_TYPES,
                     compact=True,
                     id=DLayout.MEM_TYPE,
+                    allow_blank=False,
+                ),
+            ),
+            Horizontal(
+                Label(
+                    f"{DLabel.MODEL_TYPE}",
+                    classes=DLayout.LABEL_SETTINGS_19,
+                ),
+                Select(
+                    MODEL_TYPES,
+                    compact=True,
+                    id=DLayout.MODEL_TYPE,
                     allow_blank=False,
                 ),
             ),
@@ -412,6 +423,9 @@ class AISim(App):
             learning_rate_value = f"{DModelRNN.LEARNING_RATE:.6f}"
         learning_rate.value = str(learning_rate_value)
 
+        # Adaptive Memory
+        self.query_one(f"#{DLayout.ADAPTIVE_TRAINING}", Checkbox).value = True
+
         # Move delay
         move_delay = self.query_one(f"#{DLayout.MOVE_DELAY}", Input)
         move_delay.value = str(DDef.MOVE_DELAY)
@@ -513,6 +527,10 @@ class AISim(App):
                         training_game_id.update(DLabel.N_SLASH_A)
                     else:
                         training_game_id.update(str(game_id))
+
+                # Pass the epoch to the Agent to support "adapative training"
+                agent.epoch(epoch)
+
                 # Do the long training
                 agent.train_long_memory()
 
@@ -575,6 +593,10 @@ class AISim(App):
         cur_mem_type.update(MEM_TYPE.MEM_TYPE_TABLE[memory_type.value])
         # Also pass the selected memory type to the ReplayMemory object
         self.agent.memory.mem_type(memory_type.value)
+        # Adaptive memory
+        self.agent.adaptive_training(
+            self.query_one(f"#{DLayout.ADAPTIVE_TRAINING}", Checkbox).value
+        )
 
         # Change the current settings from Game ID to Random Frames if we're using
         # random frames

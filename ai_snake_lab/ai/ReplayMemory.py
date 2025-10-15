@@ -38,6 +38,8 @@ class ReplayMemory:
         if not os.path.exists(snake_dir):
             os.mkdir(snake_dir)
         self.db_file = os.path.join(snake_dir, DFile.RUNTIME_DB)
+        if os.path.exists(self.db_file):
+            os.remove(self.db_file)
 
         # Connect to SQLite
         self.conn = sqlite3.connect(self.db_file, check_same_thread=False)

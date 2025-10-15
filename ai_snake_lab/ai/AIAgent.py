@@ -19,6 +19,7 @@ from ai_snake_lab.constants.DLabels import DLabel
 from ai_snake_lab.constants.DReplayMemory import MEM, MEM_TYPE
 from ai_snake_lab.constants.DModelL import DModelL
 from ai_snake_lab.constants.DModelLRNN import DModelRNN
+from ai_snake_lab.constants.DAIAgent import DAIAgent
 
 
 class AIAgent:
@@ -32,6 +33,18 @@ class AIAgent:
         self._model_type = None
         self._num_frames = None
         self._seed = seed
+        self._adaptive_training = None
+        self._epoch = None
+
+    def adaptive_training(self, enable_flag=None):
+        if enable_flag is not None:
+            self._adaptive_training = enable_flag
+        return self._adaptive_training
+
+    def epoch(self, epoch=None):
+        if epoch is not None:
+            self._epoch = epoch
+        return self._epoch
 
     def game_id(self, game_id=None):
         if game_id is not None:
@@ -104,39 +117,58 @@ class AIAgent:
         self.trainer.set_optimizer(optimizer)
 
     def train_long_memory(self, batch_size=64):
-        # No training data is available
-        if self.game_id() == MEM.NO_DATA:
+
+        if self.epoch() < MEM.MIN_GAMES:
+            self.game_id(MEM.NO_DATA)
+            self.num_frames(MEM.NO_DATA)
             return
 
-        training_batch = self.training_data()
-        if not training_batch:
-            return
+        # Adaptive training
 
-        states, actions, rewards, next_states, dones = zip(*training_batch)
-        n_samples = len(states)
-        total_loss = 0.0
-
-        # Slice into mini-batches
-        for start in range(0, n_samples, batch_size):
-            end = min(start + batch_size, n_samples)
-            batch_states = states[start:end]
-            batch_actions = actions[start:end]
-            batch_rewards = rewards[start:end]
-            batch_next_states = next_states[start:end]
-            batch_dones = dones[start:end]
-
-            # Vectorized training step
-            loss = self.trainer.train_step(
-                batch_states,
-                batch_actions,
-                batch_rewards,
-                batch_next_states,
-                batch_dones,
+        if self.adaptive_training():
+            loops = max(
+                1, min(self.epoch() // 250, DAIAgent.MAX_ADAPTIVE_TRAINING_LOOPS)
             )
-            total_loss += loss
+        else:
+            loops = 1
 
-        avg_loss = total_loss / (n_samples / batch_size)
-        return avg_loss
+        while loops > 0:
+            print(loops)
+            loops -= 1
+
+            # No training data is available
+            if self.game_id() == MEM.NO_DATA:
+                return
+
+            training_batch = self.training_data()
+            if not training_batch:
+                return
+
+            states, actions, rewards, next_states, dones = zip(*training_batch)
+            n_samples = len(states)
+            total_loss = 0.0
+
+            # Slice into mini-batches
+            for start in range(0, n_samples, batch_size):
+                end = min(start + batch_size, n_samples)
+                batch_states = states[start:end]
+                batch_actions = actions[start:end]
+                batch_rewards = rewards[start:end]
+                batch_next_states = next_states[start:end]
+                batch_dones = dones[start:end]
+
+                # Vectorized training step
+                loss = self.trainer.train_step(
+                    batch_states,
+                    batch_actions,
+                    batch_rewards,
+                    batch_next_states,
+                    batch_dones,
+                )
+                total_loss += loss
+
+            avg_loss = total_loss / (n_samples / batch_size)
+            return avg_loss
 
     def train_short_memory(self, state, action, reward, next_state, done):
         # Always train on the current frame

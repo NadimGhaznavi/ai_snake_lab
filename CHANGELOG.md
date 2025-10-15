@@ -13,9 +13,15 @@ The the project's [CHANGELOG](https://snakelab.osoyalce.com/CHANGELOG.html) for 
 
 ### Added
 - A page outining the notation used in Sutton's RL Book.
+- Added an *adaptive training* feature, where the the `AIAgent:train_long_memory()` code is run an increasing number of times at the end of each epoch as the total number of epochs increases.
+  - Modified the `train_long_memory()` code.
+  - Added a new `DAIAgent` constants file with `MAX_ADAPTIVE_TRAINING_LOOPS`
+  - Added a `Adaptive Training` checkbox to the TUI settings
+  - Added `adaptive_training()` and `epoch()` methods to the `AIAgent` class.
 
 ### Changed
 - The learning rate default value for the RNN.
+- Changed the default *minimum Epsilon* from 0.0 to 0.15.
 
 ### Fixed
 - Passed *minimum epsilon* from the *settings* to the actual `EpsilonAlgo` in `AISim:update_settings()`.
