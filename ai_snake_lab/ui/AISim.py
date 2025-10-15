@@ -28,6 +28,8 @@ from ai_snake_lab.constants.DSim import DSim
 from ai_snake_lab.constants.DPlot import Plot
 from ai_snake_lab.constants.DModelL import DModelL
 from ai_snake_lab.constants.DModelLRNN import DModelRNN
+from ai_snake_lab.constants.DAIAgent import DAIAgent
+
 
 from ai_snake_lab.ai.AIAgent import AIAgent
 from ai_snake_lab.ai.EpsilonAlgo import EpsilonAlgo
@@ -236,6 +238,10 @@ class AISim(App):
             Horizontal(
                 Label(f"{DLabel.STORED_GAMES}", classes=DLayout.LABEL),
                 Label(DLabel.N_SLASH_A, id=DLayout.STORED_GAMES),
+            ),
+            Horizontal(
+                Label(f"{DLabel.TRAINING_LOOPS}", classes=DLayout.LABEL),
+                Label(DLabel.N_SLASH_A, id=DLayout.TRAINING_LOOPS),
             ),
             Horizontal(
                 Label(
@@ -563,6 +569,12 @@ class AISim(App):
                 # Update the loss plot
                 epoch_loss_avg = agent.trainer.get_epoch_loss()
                 plots.add_loss_data(epoch=epoch, loss=epoch_loss_avg)
+
+                # Update the training loops value
+                loops = max(
+                    1, min(self.epoch() // 250, DAIAgent.MAX_ADAPTIVE_TRAINING_LOOPS)
+                )
+                self.query_one(f"#{DLayout.TRAINING_LOOPS}", Label).update(loops)
 
     def start_thread(self):
         self.simulator_thread.start()
