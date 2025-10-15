@@ -572,7 +572,7 @@ class AISim(App):
 
                 # Update the training loops value
                 loops = max(1, min(epoch // 250, DAIAgent.MAX_DYNAMIC_TRAINING_LOOPS))
-                self.query_one(f"#{DLayout.TRAINING_LOOPS}", Label).update(loops)
+                self.query_one(f"#{DLayout.TRAINING_LOOPS}", Label).update(str(loops))
 
     def start_thread(self):
         self.simulator_thread.start()
