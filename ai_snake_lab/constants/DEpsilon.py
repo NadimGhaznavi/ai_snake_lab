@@ -15,5 +15,5 @@ class DEpsilon(ConstGroup):
     """Epsilon Defaults"""
 
     EPSILON_INITIAL: float = 0.99  # Initial value for Epsilon
-    EPSILON_MIN: float = 0.0  # Minimum value for Epsilon
+    EPSILON_MIN: float = 0.15  # Minimum value for Epsilon
     EPSILON_DECAY: float = 0.95  # How quickly Epsilon decays
