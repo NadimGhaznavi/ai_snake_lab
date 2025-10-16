@@ -1,9 +1,9 @@
-# AI Snake Lab
+# 🐍 AI Snake Lab
 
 ---
 
 ![AI Snake Lab](/images/ai-snake-lab.png)
-# Introduction
+# 📝 Introduction
 
 **AI Snake Lab** is an interactive reinforcement learning sandbox for experimenting with AI agents in a classic Snake Game environment — featuring a live Textual TUI interface, flexible replay memory database, and modular model definitions.
 
@@ -32,7 +32,7 @@
 
 ---
 
-# Dynamic Training
+# 🔄 Dynamic Training
 
 The *Dynamic Training* checkbox implements an increasing amount of *long training* that is executed at the end of each *epoch*. The `AIAgent:train_long_memory()` code is run an increasing number of times at the end of each epoch as the total number of epochs increases to a maximum of `MAX_ADAPTIVE_TRAINING_LOOPS`, which is currently `16` according to the calculation shown below:
 
@@ -49,7 +49,9 @@ The *Dynamic Training* checkbox implements an increasing amount of *long trainin
         self.train_long_memory()
 ```
 
-# Epsilon N
+---
+
+# 🧩 Epsilon N
 
 The *Epsilon N* class, inspired by Richard Sutton's [The Bitter Lesson](http://www.incompleteideas.net/IncIdeas/BitterLesson.html), is a drop-in replacement for the traditional *Epsilon Greedy* algorithm. It instantiates a traditional *Epsilon Greedy* instance for each score. For example, when the AI has a score of 7, an *Epsilon Greedy* instance at `self._epsilons[7]` is used.
 
@@ -65,7 +67,7 @@ As shown above, the traditional Epsilon Greedy approach leads to slower improvem
 
 ---
 
-# Installation
+# 💻 Installation
 
 This project is on [PyPI](https://pypi.org/project/ai-snake-lab/). You can install the *AI Snake Lab* software using `pip`.
 
@@ -86,7 +88,7 @@ pip install ai-snake-lab
 
 ---
 
-# Running the AI Snake Lab
+# ▶️ Running the AI Snake Lab
 
 From within your *venv* environment:
 
@@ -96,7 +98,7 @@ ai-snake-lab
 
 ---
 
-# Limitations
+# ⚠️ Limitations
 
 Because the simulation runs in a Textual TUI, terminal resizing and plot redraws can subtly affect the simulation timing. As a result, highscore achievements may appear at slightly different game numbers across runs. This behavior is expected and does not indicate a bug in the AI logic.
 
@@ -104,7 +106,7 @@ If you have a requirement to make simulation runs repeatable, drop me a note and
 
 ---
 
-# Acknowledgements
+# 🙏 Acknowledgements
 
 The original code for this project was based on a YouTube tutorial, [Python + PyTorch + Pygame Reinforcement Learning – Train an AI to Play Snake](https://www.youtube.com/watch?v=L8ypSXwyBds) by Patrick Loeber. You can access his original code [here](https://github.com/patrickloeber/snake-ai-pytorch) on GitHub. Thank you Patrick!!! You are amazing!!!! This project is a port of the pygame and matplotlib solution.
 
@@ -112,7 +114,7 @@ Thanks also go out to Will McGugan and the [Textual](https://textual.textualize.
 
 ---
 
-# Inspiration
+# 🌟 Inspiration
 
 Creating an artificial intelligence agent, letting it loose and watching how it performs is an amazing process. It's not unlike having children, except on a much, much, much smaller scale, at least today! Watching the AI driven Snake Game is mesmerizing. I'm constantly thinking of ways I could improve it. I credit Patrick Loeber for giving me a fun project to explore the AI space.
 
@@ -122,7 +124,7 @@ Richard S. Sutton is also an inspiration to me. His thoughts on *Reinforcement L
 
 ---
 
-# Technical Docs
+# 📚 Technical Docs
 
 - [Filesystem Layout](/pages/project_layout.html)
 - [Database Schema Documentation](/pages/db_schema.html)
@@ -133,7 +135,7 @@ Richard S. Sutton is also an inspiration to me. His thoughts on *Reinforcement L
 
 ---
 
-# Links
+# 🔗 Links
 
 - Patrick Loeber's [YouTube Tutorial](https://www.youtube.com/watch?v=L8ypSXwyBds)
 - Will McGugan's [Textual](https://textual.textualize.io/) *Rapid Application Development* framework
