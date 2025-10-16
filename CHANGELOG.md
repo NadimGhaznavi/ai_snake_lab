@@ -9,7 +9,7 @@ The the project's [CHANGELOG](https://snakelab.osoyalce.com/CHANGELOG.html) for 
 
 --- 
 
-## [0.10.0]
+## [0.10.0] - 2025-10-16
 
 ### Added
 - A page outlining the notation used in Sutton's RL Book.
