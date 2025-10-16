@@ -14,6 +14,8 @@ from ai_snake_lab.utils.ConstGroup import ConstGroup
 class DEpsilon(ConstGroup):
     """Epsilon Defaults"""
 
+    EPSILON: str = "epsilon"
+    EPSILON_N: str = "epsilon_n"
     EPSILON_INITIAL: float = 0.99  # Initial value for Epsilon
     EPSILON_MIN: float = 0.1  # Minimum value for Epsilon
     EPSILON_DECAY: float = 0.95  # How quickly Epsilon decays

@@ -66,6 +66,12 @@ MODEL_TYPES: list = [
     (DLabel.RNN_MODEL, DModelRNN.MODEL),
 ]
 
+# A list of tuples, for the TUI's exploration selection drop down menu (Select widget).
+EXPLORATION_TYPES: list = [
+    (DLabel.EPSILON_N, DEpsilon.EPSILON_N),
+    (DLabel.EPSILON, DEpsilon.EPSILON),
+]
+
 # A dictionary of model_field to model_name values, for the TUI's runtime model
 # widget (Label widget).
 MODEL_TYPE: dict = {
@@ -87,8 +93,7 @@ class AISim(App):
         # The game board, game, agent and epsilon algorithm object
         self.game_board = GameBoard(20, id=DLayout.GAME_BOARD)
         self.snake_game = SnakeGame(game_board=self.game_board, id=DLayout.GAME_BOARD)
-        self.epsilon_algo = EpsilonAlgo(seed=DSim.RANDOM_SEED)
-        self.agent = AIAgent(epsilon_algo=self.epsilon_algo, seed=DSim.RANDOM_SEED)
+        self.agent = AIAgent(seed=DSim.RANDOM_SEED)
 
         # A dictionary to hold runtime statistics
         self.stats = {
@@ -190,6 +195,18 @@ class AISim(App):
             ),
             Horizontal(
                 Label(
+                    f"{DLabel.MODEL_TYPE}",
+                    classes=DLayout.LABEL_SETTINGS_19,
+                ),
+                Select(
+                    MODEL_TYPES,
+                    compact=True,
+                    id=DLayout.MODEL_TYPE,
+                    allow_blank=False,
+                ),
+            ),
+            Horizontal(
+                Label(
                     f"{DLabel.MEM_TYPE}",
                     classes=DLayout.LABEL_SETTINGS_12,
                 ),
@@ -202,13 +219,13 @@ class AISim(App):
             ),
             Horizontal(
                 Label(
-                    f"{DLabel.MODEL_TYPE}",
-                    classes=DLayout.LABEL_SETTINGS_19,
+                    f"{DLabel.EXPLORATION}",
+                    classes=DLayout.LABEL_SETTINGS_12,
                 ),
                 Select(
-                    MODEL_TYPES,
+                    EXPLORATION_TYPES,
                     compact=True,
-                    id=DLayout.MODEL_TYPE,
+                    id=DLayout.EXPLORATION,
                     allow_blank=False,
                 ),
             ),
@@ -478,7 +495,7 @@ class AISim(App):
 
             # Reinforcement learning starts here
             old_state = game_board.get_state()
-            move = agent.get_move(old_state)
+            move = agent.get_move(old_state, score)
             reward, game_over, score = snake_game.play_step(move)
 
             # New highscore! Add a line to the highscores Log widget
@@ -488,6 +505,9 @@ class AISim(App):
                 runtime_str = minutes_to_uptime(elapsed_secs)
                 highscores.write_line(f"{epoch:7,d}{score:7d}{runtime_str:>13s}")
                 plots.add_highscore_data(epoch, score)
+                # Send the EpsilonN a signal to instantiate a new EpsilonAlgo.
+                # This call is accepted, but ignored by the vanilla EpsilonAlog
+                agent.explore.new_highscore(score=score)
 
             # Update the highscore and score on the game box
             game_box.border_subtitle = (
@@ -544,9 +564,9 @@ class AISim(App):
                 snake_game.reset()
                 # The Epsilon algorithm object needs to know when the game is over to
                 # decay epsilon
-                agent.epsilon_algo.played_game()
+                agent.explore.played_game(score=score)
                 # Get the current epsilon value
-                cur_epsilon_value = self.epsilon_algo.epsilon()
+                cur_epsilon_value = agent.explore.epsilon(score=score)
                 if cur_epsilon_value < 0.0001:
                     cur_epsilon.update("0.0000")
                 else:
@@ -571,7 +591,12 @@ class AISim(App):
                 plots.add_loss_data(epoch=epoch, loss=epoch_loss_avg)
 
                 # Update the training loops value
-                loops = max(1, min(epoch // 250, DAIAgent.MAX_DYNAMIC_TRAINING_LOOPS))
+                if self.query_one(f"#{DLayout.DYNAMIC_TRAINING}", Checkbox).value:
+                    loops = max(
+                        1, min(epoch // 250, DAIAgent.MAX_DYNAMIC_TRAINING_LOOPS)
+                    )
+                else:
+                    loops = 1
                 self.query_one(f"#{DLayout.TRAINING_LOOPS}", Label).update(str(loops))
 
     def start_thread(self):
@@ -614,9 +639,18 @@ class AISim(App):
             training_label = self.query_one(f"#{DLayout.TRAINING_ID_LABEL}", Label)
             training_label.update(DLabel.RANDOM_FRAMES)
 
-        # Get the minimum epsilon setting and pass it to the EpsilonAlgo
-        self.agent.epsilon_algo.epsilon_min(
+        # Set the exploration type
+        self.agent.set_explore(self.query_one(f"#{DLayout.EXPLORATION}", Select).value)
+
+        # Get the epsilon settings and pass them to the explore module (Epsilon or EpsilonN)
+        self.agent.explore.epsilon_min(
             float(self.query_one(f"#{DLayout.EPSILON_MIN}", Input).value)
+        )
+        self.agent.explore.initial_epsilon(
+            float(self.query_one(f"#{DLayout.EPSILON_INITIAL}", Input).value)
+        )
+        self.agent.explore.epsilon_decay(
+            float(self.query_one(f"#{DLayout.EPSILON_DECAY}", Input).value)
         )
 
 

@@ -12,19 +12,26 @@ The the project's [CHANGELOG](https://snakelab.osoyalce.com/CHANGELOG.html) for 
 ## [Unreleased]
 
 ### Added
-- A page outining the notation used in Sutton's RL Book.
-- Added an *adaptive training* feature, where the the `AIAgent:train_long_memory()` code is run an increasing number of times at the end of each epoch as the total number of epochs increases.
+- A page outlining the notation used in Sutton's RL Book.
+- Added an *dynamic training* feature, where the `AIAgent:train_long_memory()` code is run an increasing number of times at the end of each epoch as the total number of epochs increases.
   - Modified the `train_long_memory()` code.
-  - Added a new `DAIAgent` constants file with `MAX_ADAPTIVE_TRAINING_LOOPS`
-  - Added a `Adaptive Training` checkbox to the TUI settings
-  - Added `adaptive_training()` and `epoch()` methods to the `AIAgent` class.
+  - Added a new `DAIAgent` constants file with `MAX_DYNAMIC_TRAINING_LOOPS`
+  - Added a `Dynamic Training` checkbox to the TUI settings
+  - Added `dynamic_training()` and `epoch()` methods to the `AIAgent` class.
+  - Added a `loops` TUI element to show the current number of loops used during the *long training* phase.
+  - Added a *Dynamic Training* section to the project's [website](https://snakelab.osoyalce.com/).
+- Added a *Epsilon N* feature in a new `EpsilonAlgoN` class.
+  - Added a drop-down menu in the TUI to let the user choose between *Epsilon* and *Epsilon N*.
+  - Added an *Epsilon N* section to the project's [website](https://snakelab.osoyalce.com/).
 
 ### Changed
 - The learning rate default value for the RNN.
-- Changed the default *minimum Epsilon* from 0.0 to 0.15.
+- Changed the default *minimum Epsilon* from 0.0 to 0.1.
 
 ### Fixed
-- Passed *minimum epsilon* from the *settings* to the actual `EpsilonAlgo` in `AISim:update_settings()`.
+- Passed the TUI *minimum*, *initial* and *decay* *Epsilon* values from the *settings* to the actual `EpsilonAlgo` and `EpsilonAlgoN` classes `AISim:update_settings()`.
+
+---
 
 ## [0.9.0] - 2025-10-13
 

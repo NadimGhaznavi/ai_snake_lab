@@ -14,4 +14,4 @@ from ai_snake_lab.utils.ConstGroup import ConstGroup
 class DAIAgent(ConstGroup):
     """Files"""
 
-    MAX_ADAPTIVE_TRAINING_LOOPS: int = 16  # AI Snake Lab Textual CSS file
+    MAX_DYNAMIC_TRAINING_LOOPS: int = 16  # AI Snake Lab Textual CSS file

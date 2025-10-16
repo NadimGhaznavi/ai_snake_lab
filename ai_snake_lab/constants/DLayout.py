@@ -14,7 +14,6 @@ from ai_snake_lab.utils.ConstGroup import ConstGroup
 class DLayout(ConstGroup):
     """Layout fields used in the TUI"""
 
-    ADAPTIVE_TRAINING: str = "adaptive_training"
     BUTTON_BOX: str = "button_box"
     BUTTON_PAUSE: str = "button_pause"
     BUTTON_QUIT: str = "button_quit"
@@ -28,6 +27,8 @@ class DLayout(ConstGroup):
     CUR_MODEL_TYPE: str = "cur_model_type"
     CUR_MOVE_DELAY: str = "cur_move_delay"
     CUR_TRAINING_GAME_ID: str = "cur_training_game_id"
+    DYNAMIC_EPSILON: str = "dynamic_epsilon"
+    DYNAMIC_TRAINING: str = "dynamic_training"
     FILLER_1: str = "filler_1"
     FILLER_2: str = "filler_2"
     FILLER_3: str = "filler_3"
@@ -47,6 +48,7 @@ class DLayout(ConstGroup):
     EPSILON_DECAY: str = "epsilon_decay"
     EPSILON_INITIAL: str = "initial_epsilon"
     EPSILON_MIN: str = "epsilon_min"
+    EXPLORATION: str = "exploration"
     INPUT_10: str = "input_10"
     LABEL: str = "label"
     LABEL_SETTINGS: str = "label_settings"
@@ -66,5 +68,6 @@ class DLayout(ConstGroup):
     STORED_GAMES: str = "stored_games"
     TABBED_PLOTS: str = "tabbed_plots"
     TITLE: str = "title"
+    TRAINING_LOOPS: str = "training_loops"
     TRAINING_ID_LABEL: str = "training_id_label"
     VARIABLE: str = "variable"

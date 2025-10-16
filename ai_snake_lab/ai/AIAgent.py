@@ -10,6 +10,7 @@ ai/Agent.py
 
 import torch
 from ai_snake_lab.ai.EpsilonAlgo import EpsilonAlgo
+from ai_snake_lab.ai.EpsilonAlgoN import EpsilonAlgoN
 from ai_snake_lab.ai.ReplayMemory import ReplayMemory
 from ai_snake_lab.ai.AITrainer import AITrainer
 from ai_snake_lab.ai.models.ModelL import ModelL
@@ -20,12 +21,13 @@ from ai_snake_lab.constants.DReplayMemory import MEM, MEM_TYPE
 from ai_snake_lab.constants.DModelL import DModelL
 from ai_snake_lab.constants.DModelLRNN import DModelRNN
 from ai_snake_lab.constants.DAIAgent import DAIAgent
+from ai_snake_lab.constants.DEpsilon import DEpsilon
 
 
 class AIAgent:
 
-    def __init__(self, epsilon_algo: EpsilonAlgo, seed: int):
-        self.epsilon_algo = epsilon_algo
+    def __init__(self, seed: int):
+        self.explore = None
         self.memory = ReplayMemory(seed=seed)
         self.trainer = None
         self._training_data = []
@@ -51,8 +53,8 @@ class AIAgent:
             self._game_id = game_id
         return self._game_id
 
-    def get_move(self, state):
-        random_move = self.epsilon_algo.get_move()  # Explore with epsilon
+    def get_move(self, state, score):
+        random_move = self.explore.get_move(score=score)  # Explore with epsilon
         if random_move != False:
             return random_move  # Random move was returned
 
@@ -113,6 +115,14 @@ class AIAgent:
             self._num_frames = frames
         return self._num_frames
 
+    def set_explore(self, explore_type):
+        if explore_type == DEpsilon.EPSILON:
+            self.explore = EpsilonAlgo(seed=self._seed)
+        elif explore_type == DEpsilon.EPSILON_N:
+            self.explore = EpsilonAlgoN(seed=self._seed)
+        else:
+            raise ValueError(f"Unknown exploration type: {explore_type}")
+
     def set_optimizer(self, optimizer):
         self.trainer.set_optimizer(optimizer)
 
@@ -133,7 +143,6 @@ class AIAgent:
             loops = 1
 
         while loops > 0:
-            print(loops)
             loops -= 1
 
             # No training data is available
