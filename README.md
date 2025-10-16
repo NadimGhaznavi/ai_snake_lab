@@ -32,6 +32,39 @@
 
 ---
 
+# Dynamic Training
+
+The *Dynamic Training* checkbox implements an increasing amount of *long training* that is executed at the end of each *epoch*. The `AIAgent:train_long_memory()` code is run an increasing number of times at the end of each epoch as the total number of epochs increases to a maximum of `MAX_ADAPTIVE_TRAINING_LOOPS`, which is currently `16` according to the calculation shown below:
+
+```
+    if self.dynamic_training():
+        loops = max(
+            1, min(self.epoch() // 250, DAIAgent.MAX_DYNAMIC_TRAINING_LOOPS)
+        )
+    else:
+        loops = 1
+
+    while loops > 0:
+        loops -= 1
+        self.train_long_memory()
+```
+
+# Epsilon N
+
+The *Epsilon N* class, inspired by Richard Sutton's [The Bitter Lesson](http://www.incompleteideas.net/IncIdeas/BitterLesson.html), is a drop-in replacement for the traditional *Epsilon Greedy* algorithm. It instantiates a traditional *Epsilon Greedy* instance for each score. For example, when the AI has a score of 7, an *Epsilon Greedy* instance at `self._epsilons[7]` is used.
+
+The screenshot below shows the *Highscores* plot with the traditional, single instance *Epsilon Greedy* algorithm and with [Dynamic Training](#dynamic-training) enabled. The single-instance epsilon algorithm quickly converges but shows uneven progress. The abrupt jumps in the high score line indicate that exploration declines before the AI fully masters each stage of play.
+
+![Traditional Epsilon Greedy](/images/highscores-epsilon.png)
+
+The next screenshot shows the *Highscores* plot without [Dynamic Training](#dynamic-training) enabled and with the *Epsilon N* being used. By maintaining a separate epsilon for each score level, *Epsilon N* sustains exploration locally. This results in a smoother, more linear high-score curve as the AI consolidates learning at each stage before progressing.
+
+![Epsilon N](/images/highscores-epsilon-n.png)
+
+As shown above, the traditional Epsilon Greedy approach leads to slower improvement, with the highscore curve flattening early. By contrast, Epsilon N maintains steady progress as the AI masters each score level independently.
+
+---
+
 # Installation
 
 This project is on [PyPI](https://pypi.org/project/ai-snake-lab/). You can install the *AI Snake Lab* software using `pip`.
@@ -63,17 +96,6 @@ ai-snake-lab
 
 ---
 
-# Technical Docs
-
-- [Filesystem Layout](/pages/project_layout.html)
-- [Database Schema Documentation](/pages/db_schema.html)
-- Organization and Naming of [Constants](/pages/constants.html)
-- [Git Commit Standards](/pages/git_commit_standards.html)
-- [Git Branching Strategy](/pages/git_branching_strategy.html)
-- [Change Log](/CHANGELOG.md)
-
----
-
 # Limitations
 
 Because the simulation runs in a Textual TUI, terminal resizing and plot redraws can subtly affect the simulation timing. As a result, highscore achievements may appear at slightly different game numbers across runs. This behavior is expected and does not indicate a bug in the AI logic.
@@ -100,12 +122,23 @@ Richard S. Sutton is also an inspiration to me. His thoughts on *Reinforcement L
 
 ---
 
+# Technical Docs
+
+- [Filesystem Layout](/pages/project_layout.html)
+- [Database Schema Documentation](/pages/db_schema.html)
+- Organization and Naming of [Constants](/pages/constants.html)
+- [Git Commit Standards](/pages/git_commit_standards.html)
+- [Git Branching Strategy](/pages/git_branching_strategy.html)
+- [Change Log](/CHANGELOG.md)
+
+---
+
 # Links
 
 - Patrick Loeber's [YouTube Tutorial](https://www.youtube.com/watch?v=L8ypSXwyBds)
 - Will McGugan's [Textual](https://textual.textualize.io/) *Rapid Application Development* framework
 - [Dolphie](https://github.com/charles-001/dolphie): *A single pane of glass for real-time analytics into MySQL/MariaDB & ProxySQL*
 - Richard Sutton's [Homepage](http://www.incompleteideas.net/)
-- Richard Sutton [quotes](/pages/richard-sutton.html) and other materials.
+- Richard Sutton [quotes](/pages/richard_sutton.html) and other materials.
 - [Useful Plots to Diagnose your Neural Network](https://medium.com/data-science/useful-plots-to-diagnose-your-neural-network-521907fa2f45) by George V Jose
 - [A Deep Dive into Learning Curves in Machine Learning](https://wandb.ai/mostafaibrahim17/ml-articles/reports/A-Deep-Dive-Into-Learning-Curves-in-Machine-Learning--Vmlldzo0NjA1ODY0) by Mostafa Ibrahim
