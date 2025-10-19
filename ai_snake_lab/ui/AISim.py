@@ -384,6 +384,11 @@ class AISim(App):
             # Clear the ReplayMemory's runtime DB
             self.agent.memory.clear_runtime_data()
 
+            # Reset the training game id
+            self.query_one(f"#{DLayout.CUR_TRAINING_GAME_ID}", Label).update(
+                DLabel.N_SLASH_A
+            )
+
             ## Simulation loop thread control
             # Signal thread to stop
             self.stop_event.set()

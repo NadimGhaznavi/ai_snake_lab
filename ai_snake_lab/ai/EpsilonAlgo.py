@@ -44,7 +44,7 @@ class EpsilonAlgo:
             return rand_move
         return False
 
-    def epsilon(self):
+    def epsilon(self, score=None):
         return self._epsilon
 
     def epsilon_decay(self, epsilon_decay=None):
@@ -65,10 +65,10 @@ class EpsilonAlgo:
     def injected(self):
         return self._injected
 
-    def new_highscore(self):
+    def new_highscore(self, score=None):
         pass
 
-    def played_game(self):
+    def played_game(self, score=None):
         self._epsilon = max(self._epsilon_min, self._epsilon * self._epsilon_decay)
         self.reset_injected()
 

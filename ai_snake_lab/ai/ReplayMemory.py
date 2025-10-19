@@ -64,6 +64,9 @@ class ReplayMemory:
 
     def append(self, transition, final_score=None):
         """Add a transition to the current game."""
+        if self.mem_type() == MEM_TYPE.NONE:
+            return
+
         (old_state, move, reward, new_state, done) = transition
 
         self.cur_memory.append((old_state, move, reward, new_state, done))

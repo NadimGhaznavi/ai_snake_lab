@@ -7,7 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 The the project's [CHANGELOG](https://snakelab.osoyalce.com/CHANGELOG.html) for more information.
 
---- 
+---
+
+## [Unreleased]
+
+
+### Fixed
+- Updated `ReplayMemory:append()` to **not** store games if the *memory type* is set to *None*.
+- `EpsilonAlgo` to make it compatable with `EpsilonAlgoN`. This way the two algorithms can be changed without any effect on `AiSim`.
+    - Fixed `played_game()` to accept an unused `score` parameter.
+    - Fixed dummy `new_highcore()` to accept a `score` paramenter.
+    - Fixed `epsilon()` to accept an unused `score` parameter.
+
+---
 
 ## [0.10.0] - 2025-10-16
 
