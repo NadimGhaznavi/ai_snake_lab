@@ -143,11 +143,6 @@ class GameBoard(ScrollView):
             / 4.0
         )
 
-        # Optional context (if tracked elsewhere)
-        recent_growth = getattr(self, "recent_growth", 0.0)
-        time_since_food = getattr(self, "steps_since_food", 0.0) / 100.0  # normalize
-
-        # --- EXISTING FEATURES ---
         state = [
             # 1-3. Snake collision directions
             (dir_r and self.is_snake_collision(point_r))
@@ -197,86 +192,6 @@ class GameBoard(ScrollView):
         ]
 
         return [float(x) for x in state]
-
-    def get_state2(self):
-
-        head = self.snake_head
-        direction = self.direction
-        point_l = Offset(head.x - 1, head.y)
-        point_r = Offset(head.x + 1, head.y)
-        point_u = Offset(head.x, head.y - 1)
-        point_d = Offset(head.x, head.y + 1)
-        dir_l = direction == Direction.LEFT
-        dir_r = direction == Direction.RIGHT
-        dir_u = direction == Direction.UP
-        dir_d = direction == Direction.DOWN
-        slb = self.get_binary(7, len(self.snake_body))
-        state = [
-            # 1. Snake collision straight ahead
-            (dir_r and self.is_snake_collision(point_r))
-            or (dir_l and self.is_snake_collision(point_l))
-            or (dir_u and self.is_snake_collision(point_u))
-            or (dir_d and self.is_snake_collision(point_d)),
-            # 2. Snake collision to the right
-            (dir_u and self.is_snake_collision(point_r))
-            or (dir_d and self.is_snake_collision(point_l))
-            or (dir_l and self.is_snake_collision(point_u))
-            or (dir_r and self.is_snake_collision(point_d)),
-            # 3. Snake collision to the left
-            (dir_d and self.is_snake_collision(point_r))
-            or (dir_u and self.is_snake_collision(point_l))
-            or (dir_r and self.is_snake_collision(point_u))
-            or (dir_l and self.is_snake_collision(point_d)),
-            # 4. Wall collision straight ahead
-            (dir_r and self.is_wall_collision(point_r))
-            or (dir_l and self.is_wall_collision(point_l))
-            or (dir_u and self.is_wall_collision(point_u))
-            or (dir_d and self.is_wall_collision(point_d)),
-            # 5. Wall collision to the right
-            (dir_u and self.is_wall_collision(point_r))
-            or (dir_d and self.is_wall_collision(point_l))
-            or (dir_l and self.is_wall_collision(point_u))
-            or (dir_r and self.is_wall_collision(point_d)),
-            # 6. Wall collision to the left
-            (dir_d and self.is_wall_collision(point_r))
-            or (dir_u and self.is_wall_collision(point_l))
-            or (dir_r and self.is_wall_collision(point_u))
-            or (dir_l and self.is_wall_collision(point_d)),
-            # 7 - 10. Last move direction
-            dir_l,
-            dir_r,
-            dir_u,
-            dir_d,
-            # 11 - 19. Food location
-            self.food.x < self.snake_head.x,  # 11. Food left
-            self.food.x > self.snake_head.x,  # 12. Food right
-            self.food.y < self.snake_head.y,  # 13. Food up
-            self.food.y > self.snake_head.y,  # 14. Food down
-            self.food.x == self.snake_head.x,  # 15.
-            self.food.x == self.snake_head.x
-            and self.food.y > self.snake_head.y,  # 16. Food ahead
-            self.food.x == self.snake_head.x
-            and self.food.y < self.snake_head.y,  # 17. Food behind
-            self.food.y == self.snake_head.y
-            and self.food.x > self.snake_head.x,  # 18. Food above
-            self.food.y == self.snake_head.y
-            and self.food.x < self.snake_head.x,  # 19. Food below
-            # 20 - 26. Snake length in binary
-            slb[0],
-            slb[1],
-            slb[2],
-            slb[3],
-            slb[4],
-            slb[5],
-            slb[6],
-        ]
-
-        # 24, 25, 26 and 27. Previous direction of the snake
-        for aDir in self.last_dirs:
-            state.append(int(aDir))
-        self.last_dirs = [dir_l, dir_r, dir_u, dir_d]
-
-        return np.array(state, dtype="int8")
 
     def is_snake_collision(self, pt: Offset) -> bool:
         if pt in self.snake_body:
