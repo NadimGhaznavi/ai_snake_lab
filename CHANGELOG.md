@@ -9,8 +9,7 @@ The the project's [CHANGELOG](https://snakelab.osoyalce.com/CHANGELOG.html) for 
 
 ---
 
-## [Unreleased]
-
+## [0.10.1] - 2025-10-19
 
 ### Fixed
 - Updated `ReplayMemory:append()` to **not** store games if the *memory type* is set to *None*.
