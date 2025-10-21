@@ -8,7 +8,6 @@ ui/AISim.py
     License: GPL 3.0
 """
 
-import threading
 import time
 import sys, os
 from datetime import datetime, timedelta
@@ -123,11 +122,15 @@ class SimClient(App):
         self.router_addr = (
             router_addr or f"{DSim.PROTOCOL}://{DSim.HOST}:{DSim.MQ_PORT}"
         )
+        self.stop_event = asyncio.Event()  # To control the simulation loop
+        self.heartbeat_stop_event = asyncio.Event()  # To control the heartbeat loop
         self.socket.connect(self.router_addr)
 
         # Handy alias
         self.send_mq = self.socket.send_json
-        self.send_mq(mq_cli_msg(DMQ.REGISTER, self.identity.decode()))
+
+        # Flag
+        self.running = True
 
     async def action_quit(self) -> None:
         """Quit the application."""
@@ -326,7 +329,46 @@ class SimClient(App):
         # The game score plot
         yield TabbedPlots(id=DLayout.TABBED_PLOTS)
 
-    def on_mount(self):
+    async def handle_requests(self):
+        """Continuously listen for simulation state data from the router"""
+        while self.running:
+            try:
+                msg_bytes = await self.socket.recv()
+                msg = zmq.utils.jsonapi.loads(msg_bytes)
+            except Exception as e:
+                self.log.error(f"{DMQ_Label.RECEIVE_ERROR}: {e}")
+                await asyncio.sleep(1)
+                continue
+
+            elem = msg.get(DMQ.ELEM)
+            data = msg.get(DMQ.DATA, {})
+
+            if elem == DMQ.AVG_EPOCH_LOSS:
+                self.avg_epoch_loss = data
+            elif elem == DMQ.CUR_EPSILON:
+                self.cur_epsilon = data
+            elif elem == DMQ.FOOD:
+                self.game_board.update_food(data)
+            elif elem == DMQ.GAME_ID:
+                self.game_id = data
+            elif elem == DMQ.EPOCH:
+                self.epoch = data
+            elif elem == DMQ.HIGHSCORE_EVENT:
+                self.highscore_event = data
+            elif elem == DMQ.NUM_FRAMES:
+                self.num_frames = data
+            elif elem == DMQ.RUNTIME:
+                self.runtime = data
+            elif elem == DMQ.SCORE:
+                self.score = data
+            elif elem == DMQ.SNAKE_HEAD:
+                self.game_board.update_snake_head(data)
+            elif elem == DMQ.SNAKE_BODY:
+                self.game_board.update_snake(data)
+            elif elem == DMQ.STORED_GAMES:
+                self.stored_games = data
+
+    async def on_mount(self):
 
         # Configuration defaults
         self.set_defaults()
@@ -356,7 +398,21 @@ class SimClient(App):
         self.register_theme(SNAKE_LAB_THEME)
         self.theme = DLayout.SNAKE_LAB_THEME
 
-    def on_quit(self):
+        await asyncio.gather(
+            # Create an asyncio task to handle the zmq messages
+            self.handle_requests(),
+            # Start sending heartbeat messages
+            self.send_heartbeat(),
+        )
+
+    async def on_quit(self):
+        for task in [self.poll_task, self.heartbeat_task]:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass  # expected on cancellation
+
         sys.exit(0)
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
@@ -405,7 +461,7 @@ class SimClient(App):
             self.add_class(DSim.RUNNING)
             self.remove_class(DSim.STOPPED)
             self.remove_class(DSim.PAUSED)
-            self.update_settings()
+            await self.update_settings()
             await self.send_mq(mq_cli_msg(DMQ.CMD, DMQ.START))
 
         # Defaults button was pressed
@@ -414,48 +470,17 @@ class SimClient(App):
 
         # Quit button was pressed
         elif button_id == DLayout.BUTTON_QUIT:
-            self.on_quit()
+            await self.on_quit()
 
         # Update button was pressed
         elif button_id == DLayout.BUTTON_UPDATE:
             self.update_settings()
 
-    async def poll_sim_router(self):
-        """Continuously listen for simulation state data from the router"""
-        while True:
-            try:
-                msg_bytes = await self.socket.recv()
-                msg = zmq.utils.jsonapi.loads(msg_bytes)
-            except Exception as e:
-                print(f"{DMQ_Label.RECEIVE_ERROR}: {e}")
-                await asyncio.sleep(1)
-                continue
-
-            elem = msg.get(DMQ.ELEM)
-            data = msg.get(DMQ.DATA, {})
-
-            if elem == DMQ.AVG_EPOCH_LOSS:
-                self.avg_epoch_loss = data
-            elif elem == DMQ.CUR_EPSILON:
-                self.cur_epsilon = data
-            elif elem == DMQ.FOOD:
-                self.game_board.update_food(data)
-            elif elem == DMQ.GAME_ID:
-                self.game_id = data
-            elif elem == DMQ.EPOCH:
-                self.epoch = data
-            elif elem == DMQ.HIGHSCORE_EVENT:
-                self.highscore_event = data
-            elif elem == DMQ.NUM_FRAMES:
-                self.num_frames = data
-            elif elem == DMQ.RUNTIME:
-                self.runtime = data
-            elif elem == DMQ.SCORE:
-                self.score = data
-            elif elem == DMQ.SNAKE_BODY:
-                self.game_board.update_snake(data)
-            elif elem == DMQ.STORED_GAMES:
-                self.stored_games = data
+    async def send_heartbeat(self):
+        """Periodic heartbeat to let the SimRouter know this client is alive."""
+        while not self.heartbeat_stop_event.is_set():
+            await self.send_mq(mq_cli_msg(DMQ.HEARTBEAT, self.identity.decode()))
+            await asyncio.sleep(DSim.HEARTBEAT_INTERVAL)
 
     def set_defaults(self):
         """Load default values into the TUI widgets. Don't send anything to the SimRouter yet."""
@@ -553,13 +578,15 @@ class SimClient(App):
         self.query_one(f"#{DLayout.GAME_BOX}", Vertical).border_title = (
             f"{DLabel.GAME} {self.epoch}"
         )
-        if self.epoch != DLabel.N_SLASH_A:
+        if self.epoch != DLabel.N_SLASH_A and self.score != DLabel.N_SLASH_A:
             self.query_one(f"#{DLayout.TABBED_PLOTS}", TabbedPlots).add_game_score_data(
                 int(self.epoch), float(self.score)
             )
 
-    def watch_game_id(self, game_id_value: str):
-        self.query_one(f"#{DLayout.TRAINING_ID_LABEL}", Label).update(game_id_value)
+    def watch_game_id(self, game_id_value):
+        if game_id_value == str(MEM.NO_DATA):
+            game_id_value = DLabel.N_SLASH_A
+        self.query_one(f"#{DLayout.CUR_TRAINING_GAME_ID}", Label).update(game_id_value)
 
     def watch_highscore_event(self, highscore_event: list):
         if len(highscore_event) == 0:
@@ -568,6 +595,12 @@ class SimClient(App):
         epoch = highscore_event[0]
         self.highscore = highscore_event[1]
         event_time = highscore_event[2]
+        if epoch == DLabel.N_SLASH_A or self.highscore == DLabel.N_SLASH_A:
+            return
+
+        epoch = int(epoch)
+        self.highscore = int(self.highscore)
+
         self.query_one(f"#{DLayout.HIGHSCORES}", Log).write_line(
             f"{epoch:7,d}{self.highscore:7d}{event_time:>13s}"
         )
@@ -580,8 +613,12 @@ class SimClient(App):
             f"{DLabel.HIGHSCORE}: {self.highscore}, {DLabel.SCORE}: {self.score}"
         )
 
-    def watch_num_frames(self, num_frames_value: str):
-        self.query_one(f"#{DLayout.TRAINING_ID_LABEL}", Label).update(num_frames_value)
+    def watch_num_frames(self, num_frames_value):
+        if num_frames_value == int(MEM.NO_DATA):
+            num_frames_value = DLabel.N_SLASH_A
+        self.query_one(f"#{DLayout.CUR_TRAINING_GAME_ID}", Label).update(
+            num_frames_value
+        )
 
     def watch_score(self, score_value: str):
         self.query_one(f"#{DLayout.GAME_BOX}", Vertical).border_subtitle = (

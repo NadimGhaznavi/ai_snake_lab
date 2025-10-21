@@ -64,13 +64,6 @@ class ClientGameBoard(ScrollView):
         super().__init__(id=id)
         self._board_size = board_size
         self.virtual_size = Size(board_size * 2, board_size)
-        snake_head = Offset(board_size // 2, board_size // 2)
-        snake = [
-            snake_head,
-            Offset(snake_head.x - 1, snake_head.y),
-            Offset(snake_head.x - 2, snake_head.y),
-        ]
-        self.update_snake(snake=snake, direction=Direction.RIGHT)
 
     def board_size(self) -> int:
         return self._board_size
@@ -111,14 +104,47 @@ class ClientGameBoard(ScrollView):
         strip = strip.crop(scroll_x, scroll_x + self.size.width)
         return strip
 
-    def update_food(self, food: Offset) -> None:
-        self.food = food
-        self.refresh()
-        # self.render_line()
+    def watch_food(self, previous_food, food) -> None:
+        """Called when the food square changes."""
 
-    def update_snake(self, snake: list[Offset], direction: Direction) -> None:
-        self.direction = direction
-        self.snake_head = snake[0]
-        self.snake_body = snake[1:]
+        # Refresh the previous food square
+        self.refresh(self.get_square_region(previous_food))
+
+        # Refresh the new food square
+        self.refresh(self.get_square_region(food))
+
+    def watch_snake_head(self, previous_snake_head: Offset, snake_head: Offset) -> None:
+        """Called when the snake head square changes."""
+        self.refresh(self.get_square_region(previous_snake_head))
+        self.refresh(self.get_square_region(snake_head))
+
+    def watch_snake_body(self, previous_snake_body: list, snake_body: list) -> None:
+        """Called when the snake body changes."""
+        for segment in previous_snake_body:
+            self.refresh(self.get_square_region(segment))
+
+        for segment in snake_body:
+            self.refresh(self.get_square_region(segment))
+
+    def update_food(self, food_msg) -> None:
+        self.food = Offset(food_msg[1][0], food_msg[1][1])
         self.refresh()
-        # self.render_line()
+
+    def update_snake(self, snake_msg) -> None:
+        snake_body = []
+        for segment in snake_msg[1]:
+            snake_body.append(Offset(segment[0], segment[1]))
+        self.snake_body = snake_body
+        self.refresh()
+
+    def update_snake_head(self, snake_head_msg) -> None:
+        self.snake_head = Offset(snake_head_msg[1][0], snake_head_msg[1][1])
+        self.refresh()
+
+    def get_square_region(self, square_offset: Offset) -> Region:
+        """Get region relative to widget from square coordinate."""
+        x, y = square_offset
+        region = Region(x * 2, y, 2, 1)
+        # Move the region into the widgets frame of reference
+        region = region.translate(-self.scroll_offset)
+        return region

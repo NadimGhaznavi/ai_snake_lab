@@ -15,4 +15,4 @@ class DDef(ConstGroup):
     """Defaults"""
 
     DOT_DB: str = ".db"  # .db files
-    MOVE_DELAY: float = 0.0  # Delay between game moves (in the training loop)
+    MOVE_DELAY: float = 0.01  # Delay between game moves (in the training loop)

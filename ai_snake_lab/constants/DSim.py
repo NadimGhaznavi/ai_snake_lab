@@ -1,5 +1,5 @@
 """
-constants/DGameBoard.py
+constants/DSim.py
 
     AI Snake Game Simulator
     Author: Nadim-Daniel Ghaznavi
@@ -29,11 +29,6 @@ class DSim(ConstGroup):
     # The discount (gamma) default
     DISCOUNT_RATE: float = 0.9
 
-    # Server protocol and port
-    HOST: str = "sally.osoyalce.com"
-    PROTOCOL: str = "tcp"
-    MQ_PORT: int = 5555
-
     # Training loop states
     PAUSED: str = "paused"
     RUNNING: str = "running"
@@ -42,3 +37,13 @@ class DSim(ConstGroup):
     # Stats dictionary keys
     GAME_SCORE: str = "game_score"
     GAME_NUM: str = "game_num"
+
+    ## Distributed settings
+    # Server protocol and port
+    HOST: str = "sally.osoyalce.com"
+    PROTOCOL: str = "tcp"
+    MQ_PORT: int = 5555
+
+    # Heartbeat interval, how often clients send "I'm alive" messages to the router.
+    # In seconds.
+    HEARTBEAT_INTERVAL: int = 5

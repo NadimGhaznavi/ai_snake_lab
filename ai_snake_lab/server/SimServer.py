@@ -25,6 +25,7 @@ from ai_snake_lab.game.SnakeGame import SnakeGame
 from ai_snake_lab.ai.AIAgent import AIAgent
 
 from ai_snake_lab.utils.MQHelper import mq_srv_msg
+from ai_snake_lab.utils.LabLogger import LabLogger
 
 from ai_snake_lab.constants.DSim import DSim
 from ai_snake_lab.constants.DMQ import DMQ, DMQ_Label
@@ -36,6 +37,9 @@ class SimServer:
     """Runs the simulation, sends updates to SimRouter, and receives commands."""
 
     def __init__(self, router_addr=None):
+        # Setup a logger
+        self.log = LabLogger(client_id=DMQ.SIM_SERVER)
+
         self.ctx = zmq.asyncio.Context()
         self.socket = self.ctx.socket(zmq.DEALER)  # DEALER talks to ROUTER
         # Set the random seed value *AFTER* we generate a unique ID, otherwise all instances
@@ -48,10 +52,11 @@ class SimServer:
             router_addr or f"{DSim.PROTOCOL}://{DSim.HOST}:{DSim.MQ_PORT}"
         )
         self.socket.connect(self.router_addr)
-        print(f"{DMQ.SIM_SERVER} {DMQ_Label.CONNECTED_TO_ROUTER} {self.router_addr}")
+        self.log.info(
+            f"{DMQ.SIM_SERVER} {DMQ_Label.CONNECTED_TO_ROUTER} {self.router_addr}"
+        )
 
         self.send_mq = self.socket.send_json
-        self.send_mq(mq_srv_msg(DMQ.REGISTER, self.identity.decode()))
         # Simulation board
         self.game_board = ServerGameBoard(DSim.BOARD_SIZE)
 
@@ -66,6 +71,10 @@ class SimServer:
         self.stop_event = asyncio.Event()  # set() means "stop"
         self.pause_event = asyncio.Event()  # set() means "paused"
         self.simulator_task = None
+        # A stop event for the heartbeat
+        self.heartbeat_stop_event = asyncio.Event()
+        # Start sending heartbeat messages
+        self.heartbeat_task = asyncio.create_task(self.send_heartbeat())
 
         # Move delay
         self.move_delay = DDef.MOVE_DELAY
@@ -88,23 +97,23 @@ class SimServer:
                     _, msg_bytes = frames
 
                 else:
-                    print(f"Malformed message: {frames}")
+                    self.log.error(f"Malformed message: {frames}")
 
                 msg = zmq.utils.jsonapi.loads(msg_bytes)
 
             except asyncio.CancelledError:
-                print("SimServer shutting down...")
+                self.log.info("SimServer shutting down...")
                 break
 
             except Exception as e:
-                print(f"{DMQ_Label.RECEIVE_ERROR}: {e}")
+                self.log.error(f"{DMQ_Label.RECEIVE_ERROR}: {e}")
                 await asyncio.sleep(1)
                 continue
 
             elem = msg.get(DMQ.ELEM)
             data = msg.get(DMQ.DATA, {})
 
-            print(f"{count} MQ Message: {msg}")
+            # self.log.debug(f"{count} MQ Message: {msg}")
             count += 1
 
             if elem == DMQ.STATUS:
@@ -189,9 +198,10 @@ class SimServer:
                             pass
                         self.simulator_task = None
 
-                    self.game_board.reset()
+                    self.snake_game.reset()
                     self.epoch = 0
-                    self.agent.model.reset_parameters()
+                    model = self.agent.model()
+                    model.reset_parameters()
                     self.agent.memory.clear_runtime_data()
                     self.reset_config()
                     await self.send_ack()
@@ -219,6 +229,13 @@ class SimServer:
             except asyncio.CancelledError:
                 pass
             self.simulator_task = None
+        self.heartbeat_stop_event.clear()
+        self.stop_event.set()
+        self.pause_event.clear()
+        self.running = DSim.STOPPED
+        await self.socket.disconnect(self.router_addr)
+        await self.socket.close()
+        await asyncio.sleep(1)
         sys.exit(0)
 
     def reset_config(self):
@@ -241,6 +258,15 @@ class SimServer:
     async def send_error(self, msg):
         await self.send_mq(mq_srv_msg(DMQ.ERROR, msg))
 
+    async def send_heartbeat(self):
+        """Periodic heartbeat to let the SimRouter know this client is alive."""
+        while not self.heartbeat_stop_event.is_set():
+            self.log.debug(
+                f"Sending heartbeat: {DMQ.HEARTBEAT}/{self.identity.decode()}"
+            )
+            await self.send_mq(mq_srv_msg(DMQ.HEARTBEAT, self.identity.decode()))
+            await asyncio.sleep(DSim.HEARTBEAT_INTERVAL)
+
     async def run_simulation(self):
         """Async simulation loop (called as an asyncio.Task)."""
 
@@ -254,8 +280,6 @@ class SimServer:
             )
             self.running = DSim.STOPPED
             return
-
-        print("DEBUG")
 
         # For convenience in this function
         game_board = self.game_board
@@ -280,6 +304,7 @@ class SimServer:
         try:
 
             while not self.stop_event.is_set():
+                self.log.debug(f"Epoch: {epoch}")
 
                 # Pause handling
                 if self.pause_event.is_set():
@@ -294,6 +319,9 @@ class SimServer:
                 # New highscore!
                 if score > highscore:
                     highscore = score
+                    # Send the EpsilonN a signal to instantiate a new EpsilonAlgo.
+                    # This call is accepted, but ignored by the vanilla EpsilonAlog
+                    agent.explore.new_highscore(score=score)
                     elapsed_secs = (datetime.now() - start_time).total_seconds()
                     runtime_str = minutes_to_uptime(elapsed_secs)
                     await self.send_mq(

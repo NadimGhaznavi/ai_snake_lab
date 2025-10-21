@@ -11,7 +11,11 @@ ai_snake_lab/server/SimRouter.py
 import asyncio
 import zmq
 import zmq.asyncio
+import time
 
+from copy import deepcopy
+
+from ai_snake_lab.utils.LabLogger import LabLogger
 from ai_snake_lab.constants.DSim import DSim
 from ai_snake_lab.constants.DMQ import DMQ, DMQ_Label
 
@@ -20,6 +24,9 @@ class SimRouter:
     """Pure MQ router between TUIs and the Simulation Server."""
 
     def __init__(self):
+
+        # Setup a logger
+        self.log = LabLogger(client_id=DMQ.SIM_ROUTER)
 
         # Initialize ZMQ context
         self.ctx = zmq.asyncio.Context()
@@ -34,43 +41,71 @@ class SimRouter:
         try:
             self.socket.bind(sim_service)
         except zmq.error.ZMQError as e:
-            print(f"Failed to bind router to {sim_service}: {e}")
+            self.log.critical(f"Failed to bind router to {sim_service}: {e}")
             raise
-        print(DMQ_Label.STARTUP_MSG % sim_service)
+        self.log.info(DMQ_Label.STARTUP_MSG % sim_service)
 
-        self.clients = {}  # i.e. {identity: "SimClient" or "SimServer"}
+        self.clients = {}
+
+        # We have two async processes that modify the same dictionary, we need a lock to
+        # prevent concurrent writes.
+        self.clients_lock = asyncio.Lock()
+        # Start the process that prunes inactive clients
+        asyncio.create_task(self.prune_dead_clients())
+
+    async def broadcast_to_simclients(self, elem, data, sender):
+        """Broadcast simulation updates (from SimServer) to all connected TUIs."""
+
+        client_ids = []
+        self.clients = deepcopy(self.clients)
+
+        for client_id in self.clients.keys():
+            if self.clients[client_id][0] == DMQ.SIM_CLIENT:
+                client_ids.append(client_id)
+
+        # Nothing to do, just return
+        if not client_ids:
+            return
+
+        msg = {DMQ.SENDER: DMQ.SIM_SERVER, DMQ.ELEM: elem, DMQ.DATA: data}
+        msg_bytes = zmq.utils.jsonapi.dumps(msg)
+
+        for client_id in client_ids:
+            if client_id != sender:
+                # print(f"Sending MQ message to client: {client_id_str}: {msg}")
+                await self.socket.send_multipart([client_id.encode(), msg_bytes])
 
     async def handle_requests(self):
         """Continuously route messages between SimClients and the SimServer."""
-        count = 0
         while True:
             try:
                 # ROUTER sockets prepend an identity frame
                 frames = await self.socket.recv_multipart()
                 identity = frames[0]
+                identity_str = identity.decode()
                 msg_bytes = frames[1]
 
                 if len(frames) != 2:
-                    print(f"{DMQ_Label.MALFORMED_MESSAGE}: {frames}")
+                    self.log.error(f"{DMQ_Label.MALFORMED_MESSAGE}: {frames}")
                     continue
 
                 msg = zmq.utils.jsonapi.loads(msg_bytes)
 
             except asyncio.CancelledError:
-                print("SimRouter shutting down...")
+                self.log.info("SimRouter shutting down...")
                 break
 
             except KeyboardInterrupt:
-                print(DMQ_Label.SHUTDOWN_MSG)
+                self.log.info(DMQ_Label.SHUTDOWN_MSG)
                 break
 
             except zmq.ZMQError as e:
-                print(f"ZMQ error in router: {e}")
+                self.log.error(f"ZMQ error in router: {e}")
                 await asyncio.sleep(0.1)
                 continue
 
             except Exception as e:
-                print(DMQ_Label.ROUTER_ERROR % e)
+                self.log.error(DMQ_Label.ROUTER_ERROR % e)
                 continue
 
             # Parse message
@@ -78,18 +113,26 @@ class SimRouter:
             elem = msg.get(DMQ.ELEM)
             data = msg.get(DMQ.DATA, {})
 
-            print(f"{count} MQ Message: {msg}")
-            count += 1
+            ### Uncomment for debugging
+            # self.log.debug(f"MQ DEBUG {sender_type}({identity_str}): {msg}")
 
             # Validate message
             if not sender_type or elem is None:
-                print(f"{DMQ_Label.MALFORMED_MESSAGE}: {msg}")
+                self.log.error(f"{DMQ_Label.MALFORMED_MESSAGE}: {msg}")
                 continue
 
-            # Register/refresh sender identity
-            if elem == DMQ.REGISTER:
-                self.register_client(identity, sender_type)
+            # Capture heartbeat messages sender identity
+            if elem == DMQ.HEARTBEAT:
+                async with self.clients_lock:
+                    self.clients[identity_str] = (sender_type, time.time())
+                self.log.debug(f"Received heartbeat from {sender_type}({identity_str})")
                 continue
+
+            # Log start/stop/pause messages
+            if elem == DMQ.CMD:
+                self.log.info(
+                    f"Received {data} command from {sender_type}/{identity_str}"
+                )
 
             # Route logic
             if sender_type == DMQ.SIM_CLIENT:
@@ -105,18 +148,21 @@ class SimRouter:
                     )
 
             else:
-                print(f"{DMQ_Label.UNKNOWN_SENDER}: {sender_type}")
+                self.log.error(f"{DMQ_Label.UNKNOWN_SENDER}: {sender_type}")
 
     async def forward_to_simserver(self, elem, data, sender):
         """Forward TUI command to the simulation server."""
 
         # Find all connected SimServers
-        sim_identities = [
-            id for id, typ in self.clients.items() if typ == DMQ.SIM_SERVER
-        ]
+        sim_servers = []
+        self.clients = deepcopy(self.clients)
+
+        for identity in self.clients.keys():
+            if self.clients[identity][0] == DMQ.SIM_SERVER:
+                sim_servers.append(identity)
 
         # No SimServer connected - inform the client
-        if not sim_identities:
+        if not sim_servers:
             await self.socket.send_multipart(
                 [
                     sender,
@@ -132,8 +178,8 @@ class SimRouter:
         msg_bytes = zmq.utils.jsonapi.dumps(msg)
 
         # Send message to all connected SimServers
-        for sim_id in sim_identities:
-            await self.socket.send_multipart([sim_id, msg_bytes])
+        for server_id in sim_servers:
+            await self.socket.send_multipart([server_id.encode(), msg_bytes])
 
         # Acknowledge sender (SimClient)
         await self.socket.send_multipart(
@@ -143,30 +189,35 @@ class SimRouter:
             ]
         )
 
-    async def broadcast_to_simclients(self, elem, data, sender):
-        """Broadcast simulation updates (from SimServer) to all connected TUIs."""
+    async def prune_dead_clients(self):
+        """Periodic cleanup loop that removes clients whose heartbeats have stopped."""
+        while True:
+            async with self.clients_lock:
+                now = time.time()
+                client_count = 0
+                server_count = 0
 
-        client_ids = [id for id, typ in self.clients.items() if typ == DMQ.SIM_CLIENT]
+                clients_copy = deepcopy(self.clients)
+                for identity in clients_copy.keys():
+                    sender_type, last = self.clients[identity]
+                    if now - last > (DSim.HEARTBEAT_INTERVAL * 3):
+                        self.log.info(f"Client {identity} timed out")
+                        del self.clients[identity]
+                    else:
+                        if sender_type == DMQ.SIM_SERVER:
+                            server_count += 1
+                        elif sender_type == DMQ.SIM_CLIENT:
+                            client_count += 1
 
-        # Nothing to do, just return
-        if not client_ids:
-            return
-
-        msg = {DMQ.SENDER: DMQ.SIM_SERVER, DMQ.ELEM: elem, DMQ.DATA: data}
-        msg_bytes = zmq.utils.jsonapi.dumps(msg)
-
-        for client_id in client_ids:
-            if client_id != sender:
-                await self.socket.send_multipart([client_id, msg_bytes])
-
-    def register_client(self, identity, role):
-        identity_str = identity.decode()
-        print(f"New client registered: {role} ({identity_str})")
-        self.clients[identity] = role
+                self.log.info(
+                    f"Connected client(s): {client_count}, server(s): {server_count}"
+                )
+            await asyncio.sleep(DSim.HEARTBEAT_INTERVAL * 3)
 
 
 async def main():
     router = SimRouter()
+    # Start the router
     await router.handle_requests()
 
 
