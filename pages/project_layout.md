@@ -39,8 +39,9 @@ ai_snake_lab/
 │   │   ├── AISim.py
 │   │   ├── AISim.tcss
 │   │   └── TabbedPlots.py
-│   └── utils/
-│       └── ConstGroup.py
+│   ├── utils/
+│   │   └── ConstGroup.py
+│   └── sim_server.py                  
 ├── pages                              Project website pages
 │   ├── project_layout.md
 |   └── db_schema.md

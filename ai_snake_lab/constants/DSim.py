@@ -14,6 +14,9 @@ from ai_snake_lab.utils.ConstGroup import ConstGroup
 class DSim(ConstGroup):
     """Simulation Constants"""
 
+    # Size of the game board
+    BOARD_SIZE: int = 20
+
     # Random, random seed to make simulation runs repeatable
     RANDOM_SEED: int = 1970
 
@@ -25,6 +28,11 @@ class DSim(ConstGroup):
 
     # The discount (gamma) default
     DISCOUNT_RATE: float = 0.9
+
+    # Server protocol and port
+    HOST: str = "sally.osoyalce.com"
+    PROTOCOL: str = "tcp"
+    MQ_PORT: int = 5555
 
     # Training loop states
     PAUSED: str = "paused"

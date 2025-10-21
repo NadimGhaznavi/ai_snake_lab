@@ -12,11 +12,16 @@ import threading
 import time
 import sys, os
 from datetime import datetime, timedelta
+import asyncio
+import zmq
+import zmq.asyncio
+import numpy as np
 
 from textual.app import App, ComposeResult
 from textual.widgets import Label, Input, Button, Static, Log, Select, Checkbox
 from textual.containers import Vertical, Horizontal
 from textual.theme import Theme
+from textual.reactive import var
 
 from ai_snake_lab.constants.DDef import DDef
 from ai_snake_lab.constants.DEpsilon import DEpsilon
@@ -29,13 +34,10 @@ from ai_snake_lab.constants.DPlot import Plot
 from ai_snake_lab.constants.DModelL import DModelL
 from ai_snake_lab.constants.DModelLRNN import DModelRNN
 from ai_snake_lab.constants.DAIAgent import DAIAgent
+from ai_snake_lab.constants.DMQ import DMQ, DMQ_Label
 
-
-from ai_snake_lab.ai.AIAgent import AIAgent
-from ai_snake_lab.ai.EpsilonAlgo import EpsilonAlgo
-
-from ai_snake_lab.game.GameBoard import GameBoard
-from ai_snake_lab.game.SnakeGame import SnakeGame
+from ai_snake_lab.game.ClientGameBoard import ClientGameBoard
+from ai_snake_lab.utils.MQHelper import mq_cli_msg
 
 from ai_snake_lab.ui.TabbedPlots import TabbedPlots
 
@@ -74,26 +76,36 @@ EXPLORATION_TYPES: list = [
 
 # A dictionary of model_field to model_name values, for the TUI's runtime model
 # widget (Label widget).
-MODEL_TYPE: dict = {
+MODEL_TYPE_TABLE: dict = {
     DModelL.MODEL: DLabel.LINEAR_MODEL,
     DModelRNN.MODEL: DLabel.RNN_MODEL,
 }
 
 
-class AISim(App):
+class SimClient(App):
     """A Textual app that has an AI Agent playing the Snake Game."""
 
     TITLE = DLabel.APP_TITLE
     CSS_PATH = DFile.CSS_FILE
 
-    def __init__(self) -> None:
+    # Simulation data
+    avg_epoch_loss = var(0)
+    cur_epsilon = var(DLabel.N_SLASH_A)
+    epoch = var(DLabel.N_SLASH_A)
+    game_id = var(DLabel.N_SLASH_A)
+    highscore = var(DLabel.N_SLASH_A)
+    highscore_event = var([])
+    num_frames = var(DLabel.N_SLASH_A)
+    runtime = var(DLabel.N_SLASH_A)
+    score = var(DLabel.N_SLASH_A)
+    stored_games = var(DLabel.N_SLASH_A)
+
+    def __init__(self, router_addr=None) -> None:
         """Constructor"""
         super().__init__()
 
         # The game board, game, agent and epsilon algorithm object
-        self.game_board = GameBoard(20, id=DLayout.GAME_BOARD)
-        self.snake_game = SnakeGame(game_board=self.game_board, id=DLayout.GAME_BOARD)
-        self.agent = AIAgent(seed=DSim.RANDOM_SEED)
+        self.game_board = ClientGameBoard(20, id=DLayout.GAME_BOARD)
 
         # A dictionary to hold runtime statistics
         self.stats = {
@@ -103,18 +115,22 @@ class AISim(App):
             }
         }
 
-        # Prepare to run the main training loop in a background thread
-        self.cur_state = DSim.STOPPED
-        self.running = DSim.STOPPED
-        self.stop_event = threading.Event()
-        self.pause_event = threading.Event()
-        self.simulator_thread = threading.Thread(target=self.start_sim, daemon=True)
+        # Setup the connection to the SimRouter
+        self.ctx = zmq.asyncio.Context()
+        self.socket = self.ctx.socket(zmq.DEALER)
+        self.identity = f"{DMQ.SIM_CLIENT}-{np.random.randint(0,10000)}".encode()
+        self.socket.setsockopt(zmq.IDENTITY, self.identity)
+        self.router_addr = (
+            router_addr or f"{DSim.PROTOCOL}://{DSim.HOST}:{DSim.MQ_PORT}"
+        )
+        self.socket.connect(self.router_addr)
+
+        # Handy alias
+        self.send_mq = self.socket.send_json
+        self.send_mq(mq_cli_msg(DMQ.REGISTER, self.identity.decode()))
 
     async def action_quit(self) -> None:
         """Quit the application."""
-        self.stop_event.set()
-        if self.simulator_thread.is_alive():
-            self.simulator_thread.join(timeout=2)
         await super().action_quit()
 
     def compose(self) -> ComposeResult:
@@ -314,14 +330,24 @@ class AISim(App):
 
         # Configuration defaults
         self.set_defaults()
-        settings_box = self.query_one(f"#{DLayout.SETTINGS_BOX}", Vertical)
-        settings_box.border_title = DLabel.SETTINGS
 
-        # Runtime values
-        highscore_box = self.query_one(f"#{DLayout.HIGHSCORES_BOX}", Vertical)
-        highscore_box.border_title = DLabel.HIGHSCORES
-        runtime_box = self.query_one(f"#{DLayout.RUNTIME_BOX}", Vertical)
-        runtime_box.border_title = DLabel.RUNTIME_VALUES
+        # Set "Settings" box border to "Configuration Settings"
+        self.query_one(f"#{DLayout.SETTINGS_BOX}", Vertical).border_title = (
+            DLabel.SETTINGS
+        )
+
+        # Set "Highscores" box border to "Highscores"
+        self.query_one(f"#{DLayout.HIGHSCORES_BOX}", Vertical).border_title = (
+            DLabel.HIGHSCORES
+        )
+
+        # Set "Runtime" box border to "Runtime Values"
+        self.query_one(f"#{DLayout.RUNTIME_BOX}", Vertical).border_title = (
+            DLabel.RUNTIME_VALUES
+        )
+
+        # Add a starting point of (0,0) to the highscores plot
+        self.query_one(f"#{DLayout.TABBED_PLOTS}", TabbedPlots).add_highscore_data(0, 0)
 
         # Initial state is that the app is stopped
         self.add_class(DSim.STOPPED)
@@ -330,26 +356,18 @@ class AISim(App):
         self.register_theme(SNAKE_LAB_THEME)
         self.theme = DLayout.SNAKE_LAB_THEME
 
-        # Add a starting point of (0,0) to the highscores plot
-        plots = self.query_one(f"#{DLayout.TABBED_PLOTS}", TabbedPlots)
-        plots.add_highscore_data(0, 0)
-
     def on_quit(self):
-        if self.running == DSim.RUNNING:
-            self.stop_event.set()
-            if self.simulator_thread.is_alive():
-                self.simulator_thread.join()
         sys.exit(0)
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
         button_id = event.button.id
 
         # Pause button was pressed
         if button_id == DLayout.BUTTON_PAUSE:
-            self.pause_event.set()
             self.running = DSim.PAUSED
             self.remove_class(DSim.RUNNING)
             self.add_class(DSim.PAUSED)
+            await self.socket.send_json(mq_cli_msg(DMQ.CMD, DMQ.PAUSE))
 
         # Restart button was pressed
         elif button_id == DLayout.BUTTON_RESTART:
@@ -357,66 +375,38 @@ class AISim(App):
             self.add_class(DSim.STOPPED)
             self.remove_class(DSim.PAUSED)
 
-            # Reset the game and the UI
-            self.snake_game.reset()
-
             # We display the game number, highscore and score here, so clear it.
             game_box = self.query_one(f"#{DLayout.GAME_BOX}", Vertical)
             game_box.border_title = ""
             game_box.border_subtitle = ""
 
             # The highscores (a Log widget ) should be cleared
-            highscores = self.query_one(f"#{DLayout.HIGHSCORES}", Log)
-            highscores.clear()
+            self.query_one(f"#{DLayout.HIGHSCORES}", Log).clear()
 
             # Clear the plot data
-            plots = self.query_one(f"#{DLayout.TABBED_PLOTS}", TabbedPlots)
-            plots.clear_data()
-
-            # Reset the neural network's learned weights
-            model = self.agent.model()
-            model.reset_parameters()
+            self.query_one(f"#{DLayout.TABBED_PLOTS}", TabbedPlots).clear_data()
 
             # Set the current stored games back to zero
-            cur_stored_games = self.query_one(f"#{DLayout.STORED_GAMES}", Label)
-            cur_stored_games.update("0")
-
-            # Clear the ReplayMemory's runtime DB
-            self.agent.memory.clear_runtime_data()
+            self.query_one(f"#{DLayout.STORED_GAMES}", Label).update("0")
 
             # Reset the training game id
             self.query_one(f"#{DLayout.CUR_TRAINING_GAME_ID}", Label).update(
                 DLabel.N_SLASH_A
             )
 
-            ## Simulation loop thread control
-            # Signal thread to stop
-            self.stop_event.set()
-            # Unpause so we're not blocking
-            self.pause_event.clear()
-            # Join the old thread
-            if self.simulator_thread.is_alive():
-                self.simulator_thread.join(timeout=2)
-            # Recreate threading events and get a new thread
-            self.stop_event = threading.Event()
-            self.pause_event = threading.Event()
-            self.simulator_thread = threading.Thread(target=self.start_sim, daemon=True)
+            # Reset things on the SimServer side too
+            await self.send_mq(mq_cli_msg(DMQ.CMD, DMQ.RESET))
 
         # Start button was pressed
         elif button_id == DLayout.BUTTON_START:
             # Get the configuration settings, put them into the runtime widgets and
             # pass the values to the actual backend objects
-            self.update_settings()
-
-            if self.running == DSim.STOPPED:
-                self.start_thread()
-            elif self.running == DSim.PAUSED:
-                self.pause_event.clear()
-            self.pause_event.clear()
-            self.running = DSim.RUNNING
+            await self.update_settings()
             self.add_class(DSim.RUNNING)
             self.remove_class(DSim.STOPPED)
             self.remove_class(DSim.PAUSED)
+            self.update_settings()
+            await self.send_mq(mq_cli_msg(DMQ.CMD, DMQ.START))
 
         # Defaults button was pressed
         elif button_id == DLayout.BUTTON_DEFAULTS:
@@ -430,232 +420,172 @@ class AISim(App):
         elif button_id == DLayout.BUTTON_UPDATE:
             self.update_settings()
 
+    async def poll_sim_router(self):
+        """Continuously listen for simulation state data from the router"""
+        while True:
+            try:
+                msg_bytes = await self.socket.recv()
+                msg = zmq.utils.jsonapi.loads(msg_bytes)
+            except Exception as e:
+                print(f"{DMQ_Label.RECEIVE_ERROR}: {e}")
+                await asyncio.sleep(1)
+                continue
+
+            elem = msg.get(DMQ.ELEM)
+            data = msg.get(DMQ.DATA, {})
+
+            if elem == DMQ.AVG_EPOCH_LOSS:
+                self.avg_epoch_loss = data
+            elif elem == DMQ.CUR_EPSILON:
+                self.cur_epsilon = data
+            elif elem == DMQ.FOOD:
+                self.game_board.update_food(data)
+            elif elem == DMQ.GAME_ID:
+                self.game_id = data
+            elif elem == DMQ.EPOCH:
+                self.epoch = data
+            elif elem == DMQ.HIGHSCORE_EVENT:
+                self.highscore_event = data
+            elif elem == DMQ.NUM_FRAMES:
+                self.num_frames = data
+            elif elem == DMQ.RUNTIME:
+                self.runtime = data
+            elif elem == DMQ.SCORE:
+                self.score = data
+            elif elem == DMQ.SNAKE_BODY:
+                self.game_board.update_snake(data)
+            elif elem == DMQ.STORED_GAMES:
+                self.stored_games = data
+
     def set_defaults(self):
-        self.query_one(f"#{DLayout.EPSILON_INITIAL}", Input).value = str(
-            DEpsilon.EPSILON_INITIAL
-        )
+        """Load default values into the TUI widgets. Don't send anything to the SimRouter yet."""
         self.query_one(f"#{DLayout.EPSILON_DECAY}", Input).value = str(
             DEpsilon.EPSILON_DECAY
+        )
+        self.query_one(f"#{DLayout.EPSILON_INITIAL}", Input).value = str(
+            DEpsilon.EPSILON_INITIAL
         )
         self.query_one(f"#{DLayout.EPSILON_MIN}", Input).value = str(
             DEpsilon.EPSILON_MIN
         )
         self.query_one(f"#{DLayout.MEM_TYPE}", Select).value = MEM_TYPE.RANDOM_GAME
 
-        # The "default" learning rate is model specific
+        # There is no "default" value for the model (Linear, RNN etc.). Get the current selection.
         cur_model_type = self.query_one(f"#{DLayout.MODEL_TYPE}", Select).value
-        learning_rate = self.query_one(f"#{DLayout.LEARNING_RATE}", Input)
+        # Set the learning rate based on the current model selection.
         if cur_model_type == DModelL.MODEL:
             learning_rate_value = f"{DModelL.LEARNING_RATE:.6f}"
         elif cur_model_type == DModelRNN.MODEL:
             learning_rate_value = f"{DModelRNN.LEARNING_RATE:.6f}"
-        learning_rate.value = str(learning_rate_value)
+        self.query_one(f"#{DLayout.LEARNING_RATE}", Input).value = str(
+            learning_rate_value
+        )
 
         # Adaptive Memory
         self.query_one(f"#{DLayout.DYNAMIC_TRAINING}", Checkbox).value = True
 
         # Move delay
-        move_delay = self.query_one(f"#{DLayout.MOVE_DELAY}", Input)
-        move_delay.value = str(DDef.MOVE_DELAY)
+        self.query_one(f"#{DLayout.MOVE_DELAY}", Input).value = str(DDef.MOVE_DELAY)
 
-    def start_sim(self):
-        game_board = self.game_board
-        agent = self.agent
-        snake_game = self.snake_game
+    async def update_settings(self):
+        # Get the move delay from the settings, put it into the runtime widget and send it to the SimRouter
+        move_delay = self.query_one(f"#{DLayout.MOVE_DELAY}", Input).value
+        self.query_one(f"#{DLayout.CUR_MOVE_DELAY}", Label).update(move_delay)
+        await self.send_mq(mq_cli_msg(DMQ.MOVE_DELAY, move_delay))
 
-        # Reset the score, highscore and epoch
-        score = 0
-        highscore = 0
-        epoch = 1
-
-        # Update the game box, where we display the score, highscore and epch
-        game_box = self.query_one(f"#{DLayout.GAME_BOX}", Vertical)
-        game_box.border_title = f"{DLabel.GAME} #{epoch}"
-        game_box.border_subtitle = (
-            f"{DLabel.HIGHSCORE}: {highscore}, {DLabel.SCORE}: {score}"
-        )
-
-        # Start the clock for the current runtime
-        start_time = datetime.now()
-
-        # Get a reference to the stored games, highscores and current epsilon widgets.
-        # We'll update these in the main training loop.
-        highscores = self.query_one(f"#{DLayout.HIGHSCORES}", Log)
-        cur_epsilon = self.query_one(f"#{DLayout.CUR_EPSILON}", Label)
-        cur_stored_games = self.query_one(f"#{DLayout.STORED_GAMES}", Label)
-        plots = self.query_one(f"#{DLayout.TABBED_PLOTS}", TabbedPlots)
-        cur_runtime = self.query_one(f"#{DLayout.RUNTIME}", Label)
-        training_game_id = self.query_one(f"#{DLayout.CUR_TRAINING_GAME_ID}", Label)
-        cur_move_delay = self.query_one(f"#{DLayout.MOVE_DELAY}", Input)
-
-        # The main training loop)
-        while not self.stop_event.is_set():
-            ## The actual training loop...
-
-            # Watch for user's pushing the pause button
-            if self.pause_event.is_set():
-                self.pause_event.wait()
-                time.sleep(0.2)
-                continue
-
-            # Reinforcement learning starts here
-            old_state = game_board.get_state()
-            move = agent.get_move(old_state, score)
-            reward, game_over, score = snake_game.play_step(move)
-
-            # New highscore! Add a line to the highscores Log widget
-            if score > highscore:
-                highscore = score
-                elapsed_secs = (datetime.now() - start_time).total_seconds()
-                runtime_str = minutes_to_uptime(elapsed_secs)
-                highscores.write_line(f"{epoch:7,d}{score:7d}{runtime_str:>13s}")
-                plots.add_highscore_data(epoch, score)
-                # Send the EpsilonN a signal to instantiate a new EpsilonAlgo.
-                # This call is accepted, but ignored by the vanilla EpsilonAlog
-                agent.explore.new_highscore(score=score)
-
-            # Update the highscore and score on the game box
-            game_box.border_subtitle = (
-                f"{DLabel.HIGHSCORE}: {highscore}, {DLabel.SCORE}: {score}"
-            )
-
-            # We're still playing the current game
-            if not game_over:
-                # Get the current move delay from the UI
-                time.sleep(float(cur_move_delay.value))
-
-                # Reinforcement learning here....
-                new_state = game_board.get_state()
-                agent.train_short_memory(old_state, move, reward, new_state, game_over)
-                agent.memory.append((old_state, move, reward, new_state, game_over))
-
-            # Game is over
-            else:
-                # Increment the epoch and update the game box widget
-                epoch += 1
-                game_box.border_title = f"{DLabel.GAME} {epoch:,}"
-
-                # Remember the last move, get's passed to the ReplayMemory
-                agent.memory.append(
-                    (old_state, move, reward, new_state, game_over), final_score=score
-                )
-
-                # Load the training data
-                agent.load_training_data()
-                # Update the TUI
-                mem_type = agent.memory.mem_type()
-                # If the memory type is random frames, show the number of frames
-                if mem_type == MEM_TYPE.SHUFFLE:
-                    num_frames = agent.num_frames()
-                    if num_frames == MEM.NO_DATA:
-                        training_game_id.update(DLabel.N_SLASH_A)
-                    else:
-                        training_game_id.update(str(num_frames))
-                # If the memory type is random game, show the game ID
-                elif mem_type == MEM_TYPE.RANDOM_GAME:
-                    game_id = agent.game_id()
-                    if game_id == MEM.NO_DATA:
-                        training_game_id.update(DLabel.N_SLASH_A)
-                    else:
-                        training_game_id.update(str(game_id))
-
-                # Pass the epoch to the Agent to support "adapative training"
-                agent.epoch(epoch)
-
-                # Do the long training
-                agent.train_long_memory()
-
-                # Reset the game
-                snake_game.reset()
-                # The Epsilon algorithm object needs to know when the game is over to
-                # decay epsilon
-                agent.explore.played_game(score=score)
-                # Get the current epsilon value
-                cur_epsilon_value = agent.explore.epsilon(score=score)
-                if cur_epsilon_value < 0.0001:
-                    cur_epsilon.update("0.0000")
-                else:
-                    cur_epsilon.update(str(round(cur_epsilon_value, 4)))
-
-                # Update the number of stored memories
-                stored_games = agent.memory.get_num_games()
-                cur_stored_games.update(f"{stored_games:,}")
-                # Update the stats object
-                self.stats[DSim.GAME_SCORE][DSim.GAME_NUM].append(epoch)
-                self.stats[DSim.GAME_SCORE][DSim.GAME_SCORE].append(score)
-                # Update the plot object
-                plots.add_game_score_data(epoch, score)
-
-                # Update the runtime widget
-                elapsed_secs = (datetime.now() - start_time).total_seconds()
-                runtime_str = minutes_to_uptime(elapsed_secs)
-                cur_runtime.update(runtime_str)
-
-                # Update the loss plot
-                epoch_loss_avg = agent.trainer.get_epoch_loss()
-                plots.add_loss_data(epoch=epoch, loss=epoch_loss_avg)
-
-                # Update the training loops value
-                if self.query_one(f"#{DLayout.DYNAMIC_TRAINING}", Checkbox).value:
-                    loops = max(
-                        1, min(epoch // 250, DAIAgent.MAX_DYNAMIC_TRAINING_LOOPS)
-                    )
-                else:
-                    loops = 1
-                self.query_one(f"#{DLayout.TRAINING_LOOPS}", Label).update(str(loops))
-
-    def start_thread(self):
-        self.simulator_thread.start()
-
-    def update_settings(self):
-        # Get the move delay from the settings, put it into the runtime
-        move_delay = self.query_one(f"#{DLayout.MOVE_DELAY}", Input)
-        cur_move_delay = self.query_one(f"#{DLayout.CUR_MOVE_DELAY}", Label)
-        cur_move_delay.update(move_delay.value)
-
-        ## Changing these setings on-the-fly is like swapping out your carburetor while
+        ##----------------------------------------------------
+        ## Changing these next settings on-the-fly is like swapping out your carburetor while
         ## you're in the middle of a race. But, this is a sandbox, so let the user play.
 
-        # Get the model type from the settings, put it into the runtime
-        model_type = self.query_one(f"#{DLayout.MODEL_TYPE}", Select)
-        cur_model_type = self.query_one(f"#{DLayout.CUR_MODEL_TYPE}", Label)
-        cur_model_type.update(MODEL_TYPE[model_type.value])
-        # Also pass it to the Agent
-        self.agent.model_type(model_type=model_type.value)
+        # Get the model type from the settings, put it into the runtime, send to SimRouter
+        model_type = self.query_one(f"#{DLayout.MODEL_TYPE}", Select).value
+        self.query_one(f"#{DLayout.CUR_MODEL_TYPE}", Label).update(
+            MODEL_TYPE_TABLE[model_type]
+        )
+        await self.send_mq(mq_cli_msg(DMQ.MODEL_TYPE, model_type))
 
         # Now that we've set the model, we can pass in the learning rate
         learning_rate = self.query_one(f"#{DLayout.LEARNING_RATE}", Input).value
-        self.agent.trainer.set_learning_rate(float(learning_rate))
+        await self.send_mq(mq_cli_msg(DMQ.LEARNING_RATE, float(learning_rate)))
 
         # Get the memory type from the settings, put it into the runtime
-        memory_type = self.query_one(f"#{DLayout.MEM_TYPE}", Select)
-        cur_mem_type = self.query_one(f"#{DLayout.CUR_MEM_TYPE}", Label)
-        cur_mem_type.update(MEM_TYPE.MEM_TYPE_TABLE[memory_type.value])
+        memory_type = self.query_one(f"#{DLayout.MEM_TYPE}", Select).value
+        self.query_one(f"#{DLayout.CUR_MEM_TYPE}", Label).update(
+            MEM_TYPE.MEM_TYPE_TABLE[memory_type]
+        )
         # Also pass the selected memory type to the ReplayMemory object
-        self.agent.memory.mem_type(memory_type.value)
-        # Adaptive memory
-        self.agent.dynamic_training(
-            self.query_one(f"#{DLayout.DYNAMIC_TRAINING}", Checkbox).value
+        await self.send_mq(mq_cli_msg(DMQ.MEM_TYPE, memory_type))
+
+        # Dynamic training
+        dyn_train_flag = self.query_one(f"#{DLayout.DYNAMIC_TRAINING}", Checkbox).value
+        await self.send_mq(mq_cli_msg(DMQ.DYNAMIC_TRAINING, dyn_train_flag))
+
+        # Set the widget label to "Random Frames" if memory type is "Random Frames"
+        if memory_type == MEM_TYPE.SHUFFLE:
+            self.query_one(f"#{DLayout.TRAINING_ID_LABEL}", Label).update(
+                DLabel.RANDOM_FRAMES
+            )
+        # Set the widget label to "Game ID" if the memory type is "Random Game"
+        elif memory_type == MEM_TYPE.RANDOM_GAME:
+            self.query_one(f"#{DLayout.TRAINING_ID_LABEL}", Label).update(
+                DLabel.TRAINING_GAME_ID
+            )
+
+        # Set the exploration type (Epsilon or EpsilonN)
+        explore_type = self.query_one(f"#{DLayout.EXPLORATION}", Select).value
+        await self.send_mq(mq_cli_msg(DMQ.EXPLORE_TYPE, explore_type))
+
+        # Get the epsilon settings and send them to SimRouter
+        epsilon_min = self.query_one(f"#{DLayout.EPSILON_MIN}", Input).value
+        await self.socket.send_json(mq_cli_msg(DMQ.EPSILON_MIN, float(epsilon_min)))
+        epsilon_initial = self.query_one(f"#{DLayout.EPSILON_INITIAL}", Input).value
+        await self.send_mq(mq_cli_msg(DMQ.EPSILON_INITIAL, float(epsilon_initial)))
+        epsilon_decay = self.query_one(f"#{DLayout.EPSILON_DECAY}", Input).value
+        await self.send_mq(mq_cli_msg(DMQ.EPSILON_DECAY, float(epsilon_decay)))
+
+    def watch_avg_epoch_loss(self, avg_epoch_loss_value: str):
+        if self.epoch != DLabel.N_SLASH_A:
+            self.query_one(f"#{DLayout.TABBED_PLOTS}", TabbedPlots).add_loss_data(
+                int(self.epoch), float(self.avg_epoch_loss)
+            )
+
+    def watch_epoch(self, epoch_value: str):
+        self.query_one(f"#{DLayout.GAME_BOX}", Vertical).border_title = (
+            f"{DLabel.GAME} {self.epoch}"
+        )
+        if self.epoch != DLabel.N_SLASH_A:
+            self.query_one(f"#{DLayout.TABBED_PLOTS}", TabbedPlots).add_game_score_data(
+                int(self.epoch), float(self.score)
+            )
+
+    def watch_game_id(self, game_id_value: str):
+        self.query_one(f"#{DLayout.TRAINING_ID_LABEL}", Label).update(game_id_value)
+
+    def watch_highscore_event(self, highscore_event: list):
+        if len(highscore_event) == 0:
+            return
+
+        epoch = highscore_event[0]
+        self.highscore = highscore_event[1]
+        event_time = highscore_event[2]
+        self.query_one(f"#{DLayout.HIGHSCORES}", Log).write_line(
+            f"{epoch:7,d}{self.highscore:7d}{event_time:>13s}"
+        )
+        self.query_one(f"#{DLayout.TABBED_PLOTS}", TabbedPlots).add_highscore_data(
+            int(epoch), int(self.highscore)
         )
 
-        # Change the current settings from Game ID to Random Frames if we're using
-        # random frames
-        if memory_type.value == MEM_TYPE.SHUFFLE:
-            training_label = self.query_one(f"#{DLayout.TRAINING_ID_LABEL}", Label)
-            training_label.update(DLabel.RANDOM_FRAMES)
-
-        # Set the exploration type
-        self.agent.set_explore(self.query_one(f"#{DLayout.EXPLORATION}", Select).value)
-
-        # Get the epsilon settings and pass them to the explore module (Epsilon or EpsilonN)
-        self.agent.explore.epsilon_min(
-            float(self.query_one(f"#{DLayout.EPSILON_MIN}", Input).value)
+    def watch_highscore(self, highscore_value: str):
+        self.query_one(f"#{DLayout.GAME_BOX}", Vertical).border_subtitle = (
+            f"{DLabel.HIGHSCORE}: {self.highscore}, {DLabel.SCORE}: {self.score}"
         )
-        self.agent.explore.initial_epsilon(
-            float(self.query_one(f"#{DLayout.EPSILON_INITIAL}", Input).value)
-        )
-        self.agent.explore.epsilon_decay(
-            float(self.query_one(f"#{DLayout.EPSILON_DECAY}", Input).value)
+
+    def watch_num_frames(self, num_frames_value: str):
+        self.query_one(f"#{DLayout.TRAINING_ID_LABEL}", Label).update(num_frames_value)
+
+    def watch_score(self, score_value: str):
+        self.query_one(f"#{DLayout.GAME_BOX}", Vertical).border_subtitle = (
+            f"{DLabel.HIGHSCORE}: {self.highscore}, {DLabel.SCORE}: {self.score}"
         )
 
 
@@ -697,7 +627,7 @@ def minutes_to_uptime(seconds: int):
 
 # This is for the pyPI ai-snake-lab entry point to work....
 def main():
-    app = AISim()
+    app = SimClient()
     app.run()
 
 

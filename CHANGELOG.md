@@ -9,6 +9,14 @@ The the project's [CHANGELOG](https://snakelab.osoyalce.com/CHANGELOG.html) for 
 
 ---
 
+## [Unreleased] - 2025-10-19
+
+### Added
+- Updated `pages/project_layout.md`
+- Added `pyzmq`, `uvicorn` and `fastapi` to `pyproject.toml` and updated the `poetry.lock` file.
+
+---
+
 ## [0.10.1] - 2025-10-19
 
 ### Fixed
