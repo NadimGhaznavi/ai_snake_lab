@@ -1,0 +1,61 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36" version="28.2.7">
+  <diagram name="Page-1" id="O5RwqK6lJdwVSawfV_JB">
+    <mxGraphModel dx="834" dy="1133" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="wnzctVoMnM1ceYVTAS0K-8" value="&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;" vertex="1" parent="1">
+          <mxGeometry x="520" y="520" width="160" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="wnzctVoMnM1ceYVTAS0K-4" value="ZMQ" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="560" y="560" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wnzctVoMnM1ceYVTAS0K-9" value="SQLite3" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="560" y="660" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wnzctVoMnM1ceYVTAS0K-10" value="&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="520" width="160" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="wnzctVoMnM1ceYVTAS0K-11" value="ZMQ" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="160" y="560" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wnzctVoMnM1ceYVTAS0K-12" value="Textual" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="160" y="610" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wnzctVoMnM1ceYVTAS0K-13" value="" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;" vertex="1" parent="1">
+          <mxGeometry x="320" y="520" width="160" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="wnzctVoMnM1ceYVTAS0K-14" value="ZMQ" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="360" y="560" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wnzctVoMnM1ceYVTAS0K-15" value="SimRouter" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;strokeWidth=1;fontStyle=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="320" y="520" width="160" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="wnzctVoMnM1ceYVTAS0K-16" value="SimClient" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;strokeWidth=1;fontStyle=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="120" y="520" width="160" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="wnzctVoMnM1ceYVTAS0K-17" value="SimServer" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;strokeWidth=1;fontStyle=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="520" y="520" width="160" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="wnzctVoMnM1ceYVTAS0K-18" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;fontSize=12;startSize=8;endSize=8;curved=1;" edge="1" parent="1" source="wnzctVoMnM1ceYVTAS0K-11" target="wnzctVoMnM1ceYVTAS0K-14">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="280" y="460" as="sourcePoint" />
+            <mxPoint x="330" y="410" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="wnzctVoMnM1ceYVTAS0K-19" value="PyTorch" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="560" y="610" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wnzctVoMnM1ceYVTAS0K-20" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;fontSize=12;startSize=8;endSize=8;curved=1;" edge="1" parent="1" source="wnzctVoMnM1ceYVTAS0K-14" target="wnzctVoMnM1ceYVTAS0K-4">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="300" y="600" as="sourcePoint" />
+            <mxPoint x="420" y="600" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="wnzctVoMnM1ceYVTAS0K-21" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;Process Isolation&lt;/h1&gt;&lt;p&gt;The AI Sim Lab uses three independent processes to achieve deterministic simulation runs.&lt;/p&gt;" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="300" y="620" width="210" height="90" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
