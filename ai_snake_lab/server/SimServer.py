@@ -84,9 +84,18 @@ class SimServer:
         # Move delay
         self.move_delay = DDef.MOVE_DELAY
 
+        # Current highscore
+        self.highscore = 0
+
+        # Full throttle mode. This is engaged when there are no SimClients attached
+        # to the router. The move delay is set to zero and game state info is not
+        # sent to the router.
+
         # Configuration needs to be completed before the simulation can start
         self.config = {}
         self.reset_config()
+
+        self.full_throttle = False
 
     async def handle_requests(self):
         """Continuously listen for commands from the router."""
@@ -125,6 +134,12 @@ class SimServer:
                 # DON'T ack acks!!! Causes an endless zmq echo chamber.
                 continue
 
+            elif elem == DMQ.CUR_NUM_CLIENTS:
+                if data == 0:
+                    self.full_throttle = True
+                else:
+                    self.full_throttle = False
+
             elif elem == DMQ.DYNAMIC_TRAINING:
                 self.agent.dynamic_training(enable_flag=data)
                 self.config[DMQ.DYNAMIC_TRAINING] = True
@@ -149,6 +164,12 @@ class SimServer:
                 self.agent.set_explore(explore_type=data)
                 self.config[DMQ.EXPLORE_TYPE] = True
                 await self.send_ack()
+
+            elif elem == DMQ.GET_CUR_HIGHSCORE:
+                sim_client = data
+                await self.send_mq(
+                    mq_srv_msg(DMQ.CUR_HIGHSCORE, [sim_client, self.highscore])
+                )
 
             elif elem == DMQ.GET_SIM_STATE:
                 # A client is asking for the current state of the simulation
@@ -333,17 +354,19 @@ class SimServer:
 
                 # New highscore!
                 if score > highscore:
-                    highscore = score
+                    self.higscore = highscore = score
                     # Send the EpsilonN a signal to instantiate a new EpsilonAlgo.
                     # This call is accepted, but ignored by the vanilla EpsilonAlog
                     agent.explore.new_highscore(score=score)
                     elapsed_secs = (datetime.now() - start_time).total_seconds()
                     runtime_str = minutes_to_uptime(elapsed_secs)
-                    await self.send_mq(
-                        mq_srv_msg(
-                            DMQ.HIGHSCORE_EVENT, [str(epoch), str(score), runtime_str]
+                    if not self.full_throttle:
+                        await self.send_mq(
+                            mq_srv_msg(
+                                DMQ.HIGHSCORE_EVENT,
+                                [str(epoch), str(score), runtime_str],
+                            )
                         )
-                    )
 
                 # We're still playing the game...
                 if not game_over:
@@ -355,28 +378,26 @@ class SimServer:
                     agent.memory.append((old_state, move, reward, new_state, game_over))
 
                     # Send updated board data to the SimRouter
-                    mq_loc_data = game_board.location_data()
-                    await self.send_mq(
-                        mq_srv_msg(DMQ.SNAKE_HEAD, mq_loc_data[DMQ.SNAKE_HEAD])
-                    )
-                    await self.send_mq(
-                        mq_srv_msg(DMQ.SNAKE_BODY, mq_loc_data[DMQ.SNAKE_BODY])
-                    )
-                    await self.send_mq(mq_srv_msg(DMQ.FOOD, mq_loc_data[DMQ.FOOD]))
+                    if not self.full_throttle:
+                        mq_loc_data = game_board.location_data()
+                        await self.send_mq(
+                            mq_srv_msg(DMQ.SNAKE_HEAD, mq_loc_data[DMQ.SNAKE_HEAD])
+                        )
+                        await self.send_mq(
+                            mq_srv_msg(DMQ.SNAKE_BODY, mq_loc_data[DMQ.SNAKE_BODY])
+                        )
+                        await self.send_mq(mq_srv_msg(DMQ.FOOD, mq_loc_data[DMQ.FOOD]))
 
-                    # Send the score
-                    await self.send_mq(mq_srv_msg(DMQ.SCORE, str(score)))
+                        # Send the score
+                        await self.send_mq(mq_srv_msg(DMQ.SCORE, str(score)))
 
-                    # Repect the configurable move delay
-                    await asyncio.sleep(self.move_delay)
+                        # Repect the configurable move delay
+                        await asyncio.sleep(self.move_delay)
 
                 # Game is over
                 else:
                     epoch += 1
                     self.log.debug(f"Epoch: {epoch}")
-
-                    # Send the score
-                    await self.send_mq(mq_srv_msg(DMQ.SCORE, str(score)))
 
                     ## RL steps
                     # Save the last move to memory
@@ -396,83 +417,96 @@ class SimServer:
                     # Additionally, the EpsilonAlgoN needs the current game score.
                     agent.explore.played_game(score=score)
 
-                    # Send final location data
-                    mq_loc_data = game_board.location_data()
-                    await self.send_mq(
-                        mq_srv_msg(DMQ.SNAKE_HEAD, mq_loc_data[DMQ.SNAKE_HEAD])
-                    )
-                    await self.send_mq(
-                        mq_srv_msg(DMQ.SNAKE_BODY, mq_loc_data[DMQ.SNAKE_BODY])
-                    )
-                    await self.send_mq(mq_srv_msg(DMQ.FOOD, mq_loc_data[DMQ.FOOD]))
-
-                    # Send training metadata to the SimRouter
-                    mem_type = agent.memory.mem_type()
-                    if mem_type == MEM_TYPE.SHUFFLE:
+                    if not self.full_throttle:
+                        # Send final location data
+                        mq_loc_data = game_board.location_data()
                         await self.send_mq(
-                            mq_srv_msg(DMQ.NUM_FRAMES, str(agent.num_frames()))
+                            mq_srv_msg(DMQ.SNAKE_HEAD, mq_loc_data[DMQ.SNAKE_HEAD])
                         )
-                    elif mem_type == MEM_TYPE.RANDOM_GAME:
                         await self.send_mq(
-                            mq_srv_msg(DMQ.GAME_ID, str(agent.game_id()))
+                            mq_srv_msg(DMQ.SNAKE_BODY, mq_loc_data[DMQ.SNAKE_BODY])
+                        )
+                        await self.send_mq(mq_srv_msg(DMQ.FOOD, mq_loc_data[DMQ.FOOD]))
+
+                        # Send the score
+                        await self.send_mq(mq_srv_msg(DMQ.SCORE, str(score)))
+
+                        # Send training metadata to the SimRouter
+                        mem_type = agent.memory.mem_type()
+                        if mem_type == MEM_TYPE.SHUFFLE:
+                            await self.send_mq(
+                                mq_srv_msg(DMQ.NUM_FRAMES, str(agent.num_frames()))
+                            )
+                        elif mem_type == MEM_TYPE.RANDOM_GAME:
+                            await self.send_mq(
+                                mq_srv_msg(DMQ.GAME_ID, str(agent.game_id()))
+                            )
+
+                        # Get the current epsilon value and send it to the SimRouter
+                        cur_epsilon_value = agent.explore.epsilon(score=score)
+                        if cur_epsilon_value < 0.0001:
+                            cur_epsilon = "0.0000"
+                        else:
+                            cur_epsilon = str(round(cur_epsilon_value, 4))
+                        await self.send_mq(
+                            mq_srv_msg(DMQ.CUR_EPSILON, str(cur_epsilon))
                         )
 
-                    # Get the current epsilon value and send it to the SimRouter
-                    cur_epsilon_value = agent.explore.epsilon(score=score)
-                    if cur_epsilon_value < 0.0001:
-                        cur_epsilon = "0.0000"
-                    else:
-                        cur_epsilon = str(round(cur_epsilon_value, 4))
-                    await self.send_mq(mq_srv_msg(DMQ.CUR_EPSILON, str(cur_epsilon)))
-
-                    # Stored memory counter
-                    stored_games = agent.memory.get_num_games()
-                    await self.send_mq(mq_srv_msg(DMQ.STORED_GAMES, str(stored_games)))
-
-                    # Simulation runtime
-                    elapsed_secs = (datetime.now() - start_time).total_seconds()
-                    runtime_str = minutes_to_uptime(elapsed_secs)
-                    await self.send_mq(mq_srv_msg(DMQ.RUNTIME, runtime_str))
-
-                    # Current epoch
-                    await self.send_mq(mq_srv_msg(DMQ.EPOCH, str(epoch)))
-
-                    # Average loss per epoch
-                    await self.send_mq(
-                        mq_srv_msg(
-                            DMQ.AVG_EPOCH_LOSS, str(agent.trainer.get_epoch_loss())
+                        # Stored memory counter
+                        stored_games = agent.memory.get_num_games()
+                        await self.send_mq(
+                            mq_srv_msg(DMQ.STORED_GAMES, str(stored_games))
                         )
-                    )
 
-                    # Model type
-                    await self.send_mq(
-                        mq_srv_msg(DMQ.MODEL_TYPE, agent.model_type_name())
-                    )
+                        # Simulation runtime
+                        elapsed_secs = (datetime.now() - start_time).total_seconds()
+                        runtime_str = minutes_to_uptime(elapsed_secs)
+                        await self.send_mq(mq_srv_msg(DMQ.RUNTIME, runtime_str))
 
-                    # Move delay
-                    await self.send_mq(mq_srv_msg(DMQ.MOVE_DELAY, self.move_delay))
+                        # Current epoch
+                        await self.send_mq(mq_srv_msg(DMQ.EPOCH, str(epoch)))
 
-                    # Memory type
-                    await self.send_mq(
-                        mq_srv_msg(DMQ.MEM_TYPE, self.agent.memory.mem_type())
-                    )
-
-                    # Training loops
-                    if self.agent.dynamic_training():
-                        loops = max(
-                            1, min(epoch // 250, DAIAgent.MAX_DYNAMIC_TRAINING_LOOPS)
+                        # Average loss per epoch
+                        await self.send_mq(
+                            mq_srv_msg(
+                                DMQ.AVG_EPOCH_LOSS, str(agent.trainer.get_epoch_loss())
+                            )
                         )
-                    else:
-                        loops = 1
-                    await self.send_mq(mq_srv_msg(DMQ.TRAINING_LOOPS, loops))
 
-                    # Current epsilon
-                    await self.send_mq(
-                        mq_srv_msg(DMQ.CUR_EPSILON, agent.explore.epsilon(score=score))
-                    )
+                        # Model type
+                        await self.send_mq(
+                            mq_srv_msg(DMQ.MODEL_TYPE, agent.model_type_name())
+                        )
 
-                    # Runtime
-                    await self.send_mq(mq_srv_msg(DMQ.RUNTIME, runtime_str))
+                        # Move delay
+                        await self.send_mq(mq_srv_msg(DMQ.MOVE_DELAY, self.move_delay))
+
+                        # Memory type
+                        await self.send_mq(
+                            mq_srv_msg(DMQ.MEM_TYPE, self.agent.memory.mem_type())
+                        )
+
+                        # Training loops
+                        if self.agent.dynamic_training():
+                            loops = max(
+                                1,
+                                min(epoch // 250, DAIAgent.MAX_DYNAMIC_TRAINING_LOOPS),
+                            )
+                        else:
+                            loops = 1
+                        await self.send_mq(mq_srv_msg(DMQ.TRAINING_LOOPS, loops))
+
+                        # Current epsilon
+                        await self.send_mq(
+                            mq_srv_msg(
+                                DMQ.CUR_EPSILON, agent.explore.epsilon(score=score)
+                            )
+                        )
+
+                        # Runtime
+                        await self.send_mq(mq_srv_msg(DMQ.RUNTIME, runtime_str))
+
+                    await asyncio.sleep(0)
 
         except asyncio.CancelledError:
             # task cancelled (stop/reset) — swallow and exit cleanly

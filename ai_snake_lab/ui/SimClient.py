@@ -149,9 +149,16 @@ class SimClient(App):
         # Flag
         self.running = True
 
+        # Current simulation state
+        self.cur_sim_state = None
+
     async def action_quit(self) -> None:
         """Quit the application."""
         await super().action_quit()
+
+    async def check_sim_state(self):
+        # Get the current simulation state
+        await self.send_mq(mq_cli_msg(DMQ.GET_SIM_STATE, self.identity_str))
 
     def compose(self) -> ComposeResult:
         """Create child widgets for the app."""
@@ -369,18 +376,27 @@ class SimClient(App):
                 self.avg_epoch_loss = data
             elif elem == DMQ.CUR_EPSILON:
                 self.cur_epsilon = data
+            elif elem == DMQ.CUR_HIGHSCORE:
+                self.highscore = data
             elif elem == DMQ.CUR_SIM_STATE:
                 if data == DSim.PAUSED:
                     self.remove_class(DSim.RUNNING)
                     self.add_class(DSim.PAUSED)
+                    self.cur_sim_state = DSim.PAUSED
                 elif data == DSim.STOPPED:
                     self.remove_class(DSim.RUNNING)
                     self.remove_class(DSim.PAUSED)
                     self.add_class(DSim.STOPPED)
+                    self.cur_sim_state = DSim.STOPPED
                 elif data == DSim.RUNNING:
                     self.remove_class(DSim.STOPPED)
                     self.remove_class(DSim.PAUSED)
                     self.add_class(DSim.RUNNING)
+                    self.cur_sim_state = DSim.RUNNING
+                    if self.highscore == DLabel.N_SLASH_A:
+                        await self.send_mq(
+                            mq_cli_msg(DMQ.GET_CUR_HIGHSCORE, self.identity_str)
+                        )
             elif elem == DMQ.FOOD:
                 self.game_board.update_food(data)
             elif elem == DMQ.GAME_ID:
@@ -409,56 +425,6 @@ class SimClient(App):
                 self.stored_games = data
             elif elem == DMQ.TRAINING_LOOPS:
                 self.training_loops = data
-
-    async def on_mount(self):
-
-        # Configuration defaults
-        self.set_defaults()
-
-        # Set "Settings" box border to "Configuration Settings"
-        self.query_one(f"#{DLayout.SETTINGS_BOX}", Vertical).border_title = (
-            DLabel.SETTINGS
-        )
-
-        # Set "Highscores" box border to "Highscores"
-        self.query_one(f"#{DLayout.HIGHSCORES_BOX}", Vertical).border_title = (
-            DLabel.HIGHSCORES
-        )
-
-        # Set "Runtime" box border to "Runtime Values"
-        self.query_one(f"#{DLayout.RUNTIME_BOX}", Vertical).border_title = (
-            DLabel.RUNTIME_VALUES
-        )
-
-        # Add a starting point of (0,0) to the highscores plot
-        self.query_one(f"#{DLayout.TABBED_PLOTS}", TabbedPlots).add_highscore_data(0, 0)
-
-        # Initial state is that the app is stopped
-        self.add_class(DSim.STOPPED)
-
-        # Register and set the theme
-        self.register_theme(SNAKE_LAB_THEME)
-        self.theme = DLayout.SNAKE_LAB_THEME
-
-        ## NOTE: asyncio.gather breaks Textual...
-        # Start listening for ZMQ messages
-        self.poll_task = asyncio.create_task(self.handle_requests())
-
-        # Start sending heartbeat messages
-        self.heartbeat_task = asyncio.create_task(self.send_heartbeat())
-
-        # Get the current simulation state
-        self.send_mq(mq_cli_msg(DMQ.GET_SIM_STATE, self.identity_str))
-
-    async def on_quit(self):
-        for task in [self.poll_task, self.heartbeat_task]:
-            task.cancel()
-            try:
-                await task
-            except asyncio.CancelledError:
-                pass  # expected on cancellation
-
-        sys.exit(0)
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         button_id = event.button.id
@@ -527,6 +493,61 @@ class SimClient(App):
         # Update button was pressed
         elif button_id == DLayout.BUTTON_UPDATE:
             self.update_settings()
+
+    async def on_mount(self):
+
+        # Configuration defaults
+        self.set_defaults()
+
+        # Set "Settings" box border to "Configuration Settings"
+        self.query_one(f"#{DLayout.SETTINGS_BOX}", Vertical).border_title = (
+            DLabel.SETTINGS
+        )
+
+        # Set "Highscores" box border to "Highscores"
+        self.query_one(f"#{DLayout.HIGHSCORES_BOX}", Vertical).border_title = (
+            DLabel.HIGHSCORES
+        )
+
+        # Set "Runtime" box border to "Runtime Values"
+        self.query_one(f"#{DLayout.RUNTIME_BOX}", Vertical).border_title = (
+            DLabel.RUNTIME_VALUES
+        )
+
+        # Add a starting point of (0,0) to the highscores plot
+        self.query_one(f"#{DLayout.TABBED_PLOTS}", TabbedPlots).add_highscore_data(0, 0)
+
+        # Initial state is that the app is stopped
+        self.add_class(DSim.STOPPED)
+
+        # Register and set the theme
+        self.register_theme(SNAKE_LAB_THEME)
+        self.theme = DLayout.SNAKE_LAB_THEME
+
+        ## NOTE: asyncio.gather breaks Textual...
+        # Start listening for ZMQ messages
+        self.handle_requests_task = asyncio.create_task(self.handle_requests())
+        self.send_heartbeat_task = asyncio.create_task(self.send_heartbeat())
+
+        # Get the current simulation state
+        await self.send_mq(mq_cli_msg(DMQ.GET_SIM_STATE, self.identity_str))
+
+        # Start an async process to check current simulation state
+        self.check_sim_state_task = asyncio.create_task(self.check_sim_state())
+
+    async def on_quit(self):
+        for task in [
+            self.handle_requests_task,
+            self.send_heartbeat_task,
+            self.check_sim_state_task,
+        ]:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass  # expected on cancellation
+
+        sys.exit(0)
 
     async def send_heartbeat(self):
         """Periodic heartbeat to let the SimRouter know this client is alive."""

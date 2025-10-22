@@ -46,6 +46,7 @@ class SimRouter:
         self.log.info(DMQ_Label.STARTUP_MSG % sim_service)
 
         self.clients = {}
+        self.client_count = 0
 
         # We have two async processes that modify the same dictionary, we need a lock to
         # prevent concurrent writes.
@@ -148,7 +149,7 @@ class SimRouter:
                     continue
 
                 # Send these messages only to a specific SimClient
-                if elem in (DMQ.CUR_SIM_STATE):
+                if elem in (DMQ.CUR_SIM_STATE, DMQ.GET_CUR_HIGHSCORE):
                     await self.send_to_simclient(elem=elem, data=data)
 
                 # All remaining messages are broadcast to all SimClients
@@ -219,6 +220,12 @@ class SimRouter:
                         elif sender_type == DMQ.SIM_CLIENT:
                             client_count += 1
 
+                await self.forward_to_simserver(
+                    elem=DMQ.CUR_NUM_CLIENTS,
+                    data=client_count,
+                    sender=DMQ.SIM_ROUTER.encode(),
+                )
+                self.client_count = client_count
                 self.log.info(
                     f"Connected client(s): {client_count}, server(s): {server_count}"
                 )
