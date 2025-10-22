@@ -320,13 +320,18 @@ class SimClient(App):
             Horizontal(
                 Button(label=DLabel.START, id=DLayout.BUTTON_START, compact=True),
                 Button(label=DLabel.PAUSE, id=DLayout.BUTTON_PAUSE, compact=True),
-                Button(label=DLabel.QUIT, id=DLayout.BUTTON_QUIT, compact=True),
+                Button(label=DLabel.RESUME, id=DLayout.BUTTON_RESUME, compact=True),
+                Button(label=DLabel.STOP, id=DLayout.BUTTON_STOP, compact=True),
                 classes=DLayout.BUTTON_ROW,
             ),
             Horizontal(
                 Button(label=DLabel.DEFAULTS, id=DLayout.BUTTON_DEFAULTS, compact=True),
                 Button(label=DLabel.UPDATE, id=DLayout.BUTTON_UPDATE, compact=True),
-                Button(label=DLabel.RESTART, id=DLayout.BUTTON_RESTART, compact=True),
+                classes=DLayout.BUTTON_ROW,
+            ),
+            Horizontal(
+                Button(label=DLabel.RESET, id=DLayout.BUTTON_RESET, compact=True),
+                Button(label=DLabel.QUIT, id=DLayout.BUTTON_QUIT, compact=True),
                 classes=DLayout.BUTTON_ROW,
             ),
         )
@@ -365,7 +370,17 @@ class SimClient(App):
             elif elem == DMQ.CUR_EPSILON:
                 self.cur_epsilon = data
             elif elem == DMQ.CUR_SIM_STATE:
-                self.lablog.debug(f"Current sim state: {data}")
+                if data == DSim.PAUSED:
+                    self.remove_class(DSim.RUNNING)
+                    self.add_class(DSim.PAUSED)
+                elif data == DSim.STOPPED:
+                    self.remove_class(DSim.RUNNING)
+                    self.remove_class(DSim.PAUSED)
+                    self.add_class(DSim.STOPPED)
+                elif data == DSim.RUNNING:
+                    self.remove_class(DSim.STOPPED)
+                    self.remove_class(DSim.PAUSED)
+                    self.add_class(DSim.RUNNING)
             elif elem == DMQ.FOOD:
                 self.game_board.update_food(data)
             elif elem == DMQ.GAME_ID:
@@ -450,16 +465,18 @@ class SimClient(App):
 
         # Pause button was pressed
         if button_id == DLayout.BUTTON_PAUSE:
-            self.running = DSim.PAUSED
+            self.sim_state = DSim.PAUSED
             self.remove_class(DSim.RUNNING)
+            self.remove_class(DSim.STOPPED)
             self.add_class(DSim.PAUSED)
             await self.socket.send_json(mq_cli_msg(DMQ.CMD, DMQ.PAUSE))
 
         # Restart button was pressed
-        elif button_id == DLayout.BUTTON_RESTART:
+        elif button_id == DLayout.BUTTON_RESET:
             self.running = DSim.STOPPED
-            self.add_class(DSim.STOPPED)
             self.remove_class(DSim.PAUSED)
+            self.remove_class(DSim.RUNNING)
+            self.add_class(DSim.STOPPED)
 
             # We display the game number, highscore and score here, so clear it.
             game_box = self.query_one(f"#{DLayout.GAME_BOX}", Vertical)
@@ -488,11 +505,16 @@ class SimClient(App):
             # Get the configuration settings, put them into the runtime widgets and
             # pass the values to the actual backend objects
             await self.update_settings()
-            self.add_class(DSim.RUNNING)
             self.remove_class(DSim.STOPPED)
-            self.remove_class(DSim.PAUSED)
+            self.add_class(DSim.RUNNING)
             await self.update_settings()
             await self.send_mq(mq_cli_msg(DMQ.CMD, DMQ.START))
+
+        elif button_id == DLayout.BUTTON_RESUME:
+            self.remove_class(DSim.STOPPED)
+            self.remove_class(DSim.PAUSED)
+            self.add_class(DSim.RUNNING)
+            await self.send_mq(mq_cli_msg(DMQ.CMD, DMQ.RESUME))
 
         # Defaults button was pressed
         elif button_id == DLayout.BUTTON_DEFAULTS:

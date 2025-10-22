@@ -1,7 +1,7 @@
 Screen {
     layout: grid;
     grid-size: 3 5;
-    grid-rows: 3 11 6 7 24;
+    grid-rows: 3 11 9 4 24;
     grid-columns: 32 46 36;
 }
 
@@ -100,7 +100,7 @@ Button {
 
 
 #button_defaults {
-    color: #3e99af;
+    color: #7657b3ff;
     text-style: bold; 
 }
 
@@ -109,9 +109,24 @@ Button {
     text-style: bold; 
 }
 
+#button_reset {
+    color: #c44242;
+    text-style: bold; 
+}
+
+#button_resume {
+    color: #5fc442;
+    text-style: bold; 
+}
+
 #button_start {
     color: #5fc442;
     text-style: bold; 
+}
+
+#button_stop {
+    color: #c44242;
+    text-style: bold;
 }
 
 #button_restart {
@@ -125,7 +140,7 @@ Button {
 }
 
 #button_update {
-    color: #3e99af;
+    color: #7657b3ff;
     text-style: bold; 
 }
 
@@ -157,19 +172,7 @@ Button {
     display: none;
 }
 
-.paused #button_update {
-    display: none;
-}
-
-.running #button_reset {
-    display: none;
-}
-
-.running #button_restart {
-    display: none;
-}
-
-.stopped #button_restart {
+.paused #button_start {
     display: none;
 }
 
@@ -177,13 +180,18 @@ Button {
     display: none;
 }
 
+.running #button_resume {
+    display: none;
+}
+
 .stopped #button_pause {
     display: none;
 }
 
-.stopped #button_update {
+.stopped #button_resume {
     display: none;
 }
+
 .variable {
     color: #afa73eff
 }

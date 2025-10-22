@@ -218,6 +218,10 @@ class SimServer:
                     self.reset_config()
                     await self.send_ack()
 
+                elif data == DMQ.RESUME:
+                    self.running = DSim.RUNNING
+                    self.pause_event.clear()
+
                 elif data == DMQ.STOP:
                     self.running = DSim.STOPPED
                     self.stop_event.set()

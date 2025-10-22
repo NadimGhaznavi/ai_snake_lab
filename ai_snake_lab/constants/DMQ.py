@@ -44,6 +44,7 @@ class DMQ(ConstGroup):
     PAUSE: str = "pause"
     PAUSED: str = "paused"
     REGISTER: str = "register"
+    RESUME: str = "resume"
     RESET: str = "reset"
     SENDER: str = "sender"
     SIM_ROUTER: str = "SimRouter"

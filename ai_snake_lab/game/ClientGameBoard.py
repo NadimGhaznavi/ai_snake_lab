@@ -54,8 +54,8 @@ class ClientGameBoard(ScrollView):
     }
     """
 
-    food = var(Offset(3, 3))
-    snake_head = var(Offset(0, 0))
+    food = var(Offset(9, 9))
+    snake_head = var(Offset())
     snake_body = var([])
     direction = Direction.RIGHT
     last_dirs = [0, 0, 1, 0]
