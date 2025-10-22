@@ -42,7 +42,7 @@ class DBMgr:
         self.conn = sqlite3.connect(self.db_file, check_same_thread=False)
 
         # Get a cursor
-        self.cursor = self.conn.cursor()
+        self._cursor = self.conn.cursor()
 
         # Intialize the schema
         self.init_db()
@@ -59,38 +59,18 @@ class DBMgr:
         except Exception:
             pass  # avoid errors on interpreter shutdown
 
-    def add_game(self, final_score, total_frames, cur_memory):
+    def add_game(self, final_score, total_frames):
         # Record the game
-        self.cursor.execute(
+        self._cursor.execute(
             "INSERT INTO games (score, total_frames) VALUES (?, ?)",
             (final_score, total_frames),
         )
-        game_id = self.cursor.lastrowid
-
-        # Record the frames
-        for i, (state, action, reward, next_state, done) in enumerate(cur_memory):
-            self.cursor.execute(
-                """
-                    INSERT INTO frames (game_id, frame_index, state, action, reward, next_state, done)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                    """,
-                (
-                    game_id,
-                    i,
-                    pickle.dumps(state),
-                    pickle.dumps(action),
-                    reward,
-                    pickle.dumps(next_state),
-                    done,
-                ),
-            )
-
-        self.conn.commit()
+        return self._cursor.lastrowid  # game_id
 
     def clear_runtime_data(self):
         """Clear all data out of the runtime DB"""
-        self.cursor.execute("DELETE FROM games")
-        self.cursor.execute("DELETE FROM frames")
+        self._cursor.execute("DELETE FROM games")
+        self._cursor.execute("DELETE FROM frames")
         self.conn.commit()
 
     def close(self):
@@ -102,20 +82,23 @@ class DBMgr:
             os.remove(self.db_file)
             self.db_file = None
 
+    def cursor(self):
+        return self._cursor
+
     def get_average_game_length(self):
-        self.cursor.execute("SELECT AVG(total_frames) FROM games")
-        avg = self.cursor.fetchone()[0]
+        self._cursor.execute("SELECT AVG(total_frames) FROM games")
+        avg = self._cursor.fetchone()[0]
         return int(avg) if avg else 0
 
     def get_num_games(self):
         """Return number of games stored in the database."""
-        self.cursor.execute("SELECT COUNT(*) FROM games")
-        return self.cursor.fetchone()[0]
+        self._cursor.execute("SELECT COUNT(*) FROM games")
+        return self._cursor.fetchone()[0]
 
     def get_num_frames(self):
         """Return number of frames stored in the database."""
-        self.cursor.execute("SELECT COUNT(*) FROM frames")
-        return self.cursor.fetchone()[0]
+        self._cursor.execute("SELECT COUNT(*) FROM frames")
+        return self._cursor.fetchone()[0]
 
     def get_random_frames(self):
         """Return a random set of frames from the database. Do not use the SQLite3
@@ -123,8 +106,8 @@ class DBMgr:
         num_frames = self.get_average_game_length() or 32  # fallback if no data
 
         # Retrieve the id values from the frames table
-        self.cursor.execute("SELECT id FROM frames")
-        all_ids = [row[0] for row in self.cursor.fetchall()]
+        self._cursor.execute("SELECT id FROM frames")
+        all_ids = [row[0] for row in self._cursor.fetchall()]
 
         # Get n random ids
         sample_ids = random.sample(all_ids, min(num_frames, len(all_ids)))
@@ -135,11 +118,11 @@ class DBMgr:
         placeholders = ",".join("?" for _ in sample_ids)
 
         # Execute the query with the unpacked tuple
-        self.cursor.execute(
+        self._cursor.execute(
             f"SELECT state, action, reward, next_state, done FROM frames WHERE id IN ({placeholders})",
             sample_ids,
         )
-        rows = self.cursor.fetchall()
+        rows = self._cursor.fetchall()
         frames = [
             (
                 pickle.loads(state_blob),
@@ -153,18 +136,18 @@ class DBMgr:
         return frames, len(frames)
 
     def get_random_game(self):
-        self.cursor.execute("SELECT id FROM games")
-        all_ids = [row[0] for row in self.cursor.fetchall()]
+        self._cursor.execute("SELECT id FROM games")
+        all_ids = [row[0] for row in self._cursor.fetchall()]
         if not all_ids or len(all_ids) < self.min_games:
             return [], MEM.NO_DATA  # no games available
 
         rand_id = random.choice(all_ids)
-        self.cursor.execute(
+        self._cursor.execute(
             "SELECT state, action, reward, next_state, done "
             "FROM frames WHERE game_id = ? ORDER BY frame_index ASC",
             (rand_id,),
         )
-        rows = self.cursor.fetchall()
+        rows = self._cursor.fetchall()
         if not rows:
             return [], rand_id  # game exists but no frames
 
@@ -182,13 +165,13 @@ class DBMgr:
 
     def get_num_games(self):
         """Return number of games stored in the database."""
-        self.cursor.execute("SELECT COUNT(*) FROM games")
-        return self.cursor.fetchone()[0]
+        self._cursor.execute("SELECT COUNT(*) FROM games")
+        return self._cursor.fetchone()[0]
 
     def get_num_frames(self):
         """Return number of frames stored in the database."""
-        self.cursor.execute("SELECT COUNT(*) FROM frames")
-        return self.cursor.fetchone()[0]
+        self._cursor.execute("SELECT COUNT(*) FROM frames")
+        return self._cursor.fetchone()[0]
 
     def get_training_data(self, mem_type):
         if mem_type == MEM_TYPE.NONE:
@@ -224,7 +207,7 @@ class DBMgr:
 
     def init_db(self):
         # Create the games table
-        self.cursor.execute(
+        self._cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS games (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -236,7 +219,7 @@ class DBMgr:
         self.conn.commit()
 
         # Create the frames table
-        self.cursor.execute(
+        self._cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS frames (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -254,7 +237,7 @@ class DBMgr:
         self.conn.commit()
 
         # Create the unique index
-        self.cursor.execute(
+        self._cursor.execute(
             """
             CREATE UNIQUE INDEX IF NOT EXISTS idx_game_frame ON frames (game_id, frame_index);
             """
@@ -262,7 +245,7 @@ class DBMgr:
         self.conn.commit()
 
         # Create the index on game_id
-        self.cursor.execute(
+        self._cursor.execute(
             """
             CREATE INDEX IF NOT EXISTS idx_frames_game_id ON frames (game_id);
             """

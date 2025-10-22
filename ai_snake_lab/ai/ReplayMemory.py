@@ -52,11 +52,35 @@ class ReplayMemory:
 
             total_frames = len(self.cur_memory)
 
-            self.db_mgr.add_game(
-                final_score=final_score,
-                total_frames=total_frames,
-                cur_memory=self.cur_memory,
+            game_id = self.db_mgr.add_game(
+                final_score=final_score, total_frames=total_frames
             )
+
+            ## NOTE: This is low-level SQLite DB code that *should* be in DBMgr, but
+            ## that caused a huge performance hit. Moving it here is an 10x+ performance
+            ## optimization.
+            ##
+            db_cursor = self.db_mgr.cursor()
+            for index, (state, action, reward, next_state, done) in enumerate(
+                self.cur_memory
+            ):
+                db_cursor.execute(
+                    """
+                    INSERT INTO frames (game_id, frame_index, state, action, reward, next_state, done)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        game_id,
+                        index,
+                        pickle.dumps(state),
+                        pickle.dumps(action),
+                        reward,
+                        pickle.dumps(next_state),
+                        done,
+                    ),
+                )
+            self.db_mgr.conn.commit()
+            self.cur_memory = []
 
     def get_training_data(self):
         mem_type = self.mem_type()
