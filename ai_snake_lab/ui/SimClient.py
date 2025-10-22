@@ -413,6 +413,12 @@ class SimClient(App):
                 self.move_delay = data
             elif elem == DMQ.NUM_FRAMES:
                 self.num_frames = data
+            elif elem == DMQ.OLD_HIGHSCORE_EVENTS:
+                highscores_widget = self.query_one(f"#{DLayout.HIGHSCORES}", Log)
+                for event in data:
+                    highscores_widget.write_line(
+                        f"{event[0]:7,d}{event[1]:7d}{event[2]:>13s}"
+                    )
             elif elem == DMQ.RUNTIME:
                 self.runtime = data
             elif elem == DMQ.SCORE:
@@ -543,7 +549,12 @@ class SimClient(App):
         # Get the current simulation state
         await self.send_mq(mq_cli_msg(DMQ.GET_SIM_STATE, self.identity_str))
 
-        # Start an async process to check current simulation state
+        # Get the older highscore events
+        await self.send_mq(mq_cli_msg(DMQ.GET_HIGHSCORE_EVENTS, self.identity_str))
+
+        # Start an async process to check current simulation state. This is to
+        # cover the case where a 2nd SimClient connects the running simulation and
+        # changes the simulation state.
         self.check_sim_state_task = asyncio.create_task(self.check_sim_state())
 
     async def on_quit(self):

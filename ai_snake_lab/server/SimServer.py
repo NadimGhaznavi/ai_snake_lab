@@ -174,6 +174,15 @@ class SimServer:
                     mq_srv_msg(DMQ.CUR_HIGHSCORE, [sim_client, self.highscore])
                 )
 
+            elif elem == DMQ.GET_HIGHSCORE_EVENTS:
+                sim_client = data
+                await self.send_mq(
+                    mq_srv_msg(
+                        DMQ.OLD_HIGHSCORE_EVENTS,
+                        [sim_client, self.db_mgr.get_highscore_events()],
+                    )
+                )
+
             elif elem == DMQ.GET_SIM_STATE:
                 # A client is asking for the current state of the simulation
                 sim_client = data
@@ -363,6 +372,9 @@ class SimServer:
                     agent.explore.new_highscore(score=score)
                     elapsed_secs = (datetime.now() - start_time).total_seconds()
                     runtime_str = minutes_to_uptime(elapsed_secs)
+                    self.db_mgr.add_highscore_event(
+                        epoch=epoch, score=score, runtime=runtime_str
+                    )
                     if not self.full_throttle:
                         await self.send_mq(
                             mq_srv_msg(

@@ -67,10 +67,18 @@ class DBMgr:
         )
         return self._cursor.lastrowid  # game_id
 
+    def add_highscore_event(self, epoch, score, runtime):
+        # Record the highscore event
+        self._cursor.execute(
+            "INSERT INTO highscore_events (epoch, score, runtime) VALUES (?, ?, ?)",
+            (epoch, score, runtime),
+        )
+
     def clear_runtime_data(self):
         """Clear all data out of the runtime DB"""
         self._cursor.execute("DELETE FROM games")
         self._cursor.execute("DELETE FROM frames")
+        self._cursor.execute("DELETE from highscore_events")
         self.conn.commit()
 
     def close(self):
@@ -89,6 +97,12 @@ class DBMgr:
         self._cursor.execute("SELECT AVG(total_frames) FROM games")
         avg = self._cursor.fetchone()[0]
         return int(avg) if avg else 0
+
+    def get_highscore_events(self):
+        self._cursor.execute(
+            "SELECT epoch, score, runtime FROM highscore_events ORDER by epoch ASC"
+        )
+        return self._cursor.fetchall()
 
     def get_num_games(self):
         """Return number of games stored in the database."""
@@ -207,20 +221,14 @@ class DBMgr:
 
     def init_db(self):
         # Create the games table
-        self._cursor.execute(
+        self._cursor.executescript(
             """
             CREATE TABLE IF NOT EXISTS games (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 score INTEGER NOT NULL,
                 total_frames INTEGER NOT NULL
             );
-            """
-        )
-        self.conn.commit()
 
-        # Create the frames table
-        self._cursor.execute(
-            """
             CREATE TABLE IF NOT EXISTS frames (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 game_id INTEGER NOT NULL,
@@ -232,22 +240,19 @@ class DBMgr:
                 done INTEGER NOT NULL,        -- 0 or 1
                 FOREIGN KEY (game_id) REFERENCES games(id)
             );
-            """
-        )
-        self.conn.commit()
 
-        # Create the unique index
-        self._cursor.execute(
-            """
+            CREATE TABLE IF NOT EXISTS highscore_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                epoch INTEGER NOT NULL,
+                score INTEGER NOT NULL,
+                runtime TEXT NOT NULL
+            );
+
             CREATE UNIQUE INDEX IF NOT EXISTS idx_game_frame ON frames (game_id, frame_index);
-            """
-        )
-        self.conn.commit()
 
-        # Create the index on game_id
-        self._cursor.execute(
-            """
             CREATE INDEX IF NOT EXISTS idx_frames_game_id ON frames (game_id);
+
+            CREATE INDEX IF NOT EXISTS idx_highscore_events ON highscore_events (epoch);
             """
         )
         self.conn.commit()

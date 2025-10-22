@@ -149,7 +149,11 @@ class SimRouter:
                     continue
 
                 # Send these messages only to a specific SimClient
-                if elem in (DMQ.CUR_SIM_STATE, DMQ.CUR_HIGHSCORE):
+                if elem in (
+                    DMQ.CUR_SIM_STATE,
+                    DMQ.CUR_HIGHSCORE,
+                    DMQ.OLD_HIGHSCORE_EVENTS,
+                ):
                     await self.send_to_simclient(elem=elem, data=data)
 
                 # All remaining messages are broadcast to all SimClients
