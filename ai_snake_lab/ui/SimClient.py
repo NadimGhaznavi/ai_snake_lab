@@ -1,5 +1,5 @@
 """
-ui/AISim.py
+ai_snake_lab/ui/AISim.py
 
     AI Snake Game Simulator
     Author: Nadim-Daniel Ghaznavi
@@ -470,13 +470,24 @@ class SimClient(App):
         elif button_id == DLayout.BUTTON_START:
             # Get the configuration settings, put them into the runtime widgets and
             # pass the values to the actual backend objects
+            self.running = DSim.RUNNING
             await self.update_settings()
             self.remove_class(DSim.STOPPED)
             self.add_class(DSim.RUNNING)
             await self.update_settings()
             await self.send_mq(mq_cli_msg(DMQ.CMD, DMQ.START))
 
+        # Stop button was pressed
+        elif button_id == DLayout.BUTTON_STOP:
+            self.running = DSim.STOPPED
+            self.remove_class(DSim.PAUSED)
+            self.remove_class(DSim.RUNNING)
+            self.add_class(DSim.STOPPED)
+            await self.send_mq(mq_cli_msg(DMQ.CMD, DMQ.STOP))
+
+        # Resume button was pressed
         elif button_id == DLayout.BUTTON_RESUME:
+            self.running = DSim.RUNNING
             self.remove_class(DSim.STOPPED)
             self.remove_class(DSim.PAUSED)
             self.add_class(DSim.RUNNING)
@@ -557,6 +568,11 @@ class SimClient(App):
 
     def set_defaults(self):
         """Load default values into the TUI widgets. Don't send anything to the SimRouter yet."""
+
+        # The score and highscore are reactive variables
+        self.score = 0
+        self.highscore = 0
+
         self.query_one(f"#{DLayout.EPSILON_DECAY}", Input).value = str(
             DEpsilon.EPSILON_DECAY
         )

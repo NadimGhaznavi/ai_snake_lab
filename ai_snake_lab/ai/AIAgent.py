@@ -1,5 +1,5 @@
 """
-ai/Agent.py
+ai_snake_lab/ai/Agent.py
 
     AI Snake Game Simulator
     Author: Nadim-Daniel Ghaznavi
@@ -13,8 +13,11 @@ from ai_snake_lab.ai.EpsilonAlgo import EpsilonAlgo
 from ai_snake_lab.ai.EpsilonAlgoN import EpsilonAlgoN
 from ai_snake_lab.ai.ReplayMemory import ReplayMemory
 from ai_snake_lab.ai.AITrainer import AITrainer
+
 from ai_snake_lab.ai.models.ModelL import ModelL
 from ai_snake_lab.ai.models.ModelRNN import ModelRNN
+
+from ai_snake_lab.utils.DBMgr import DBMgr
 
 from ai_snake_lab.constants.DLabels import DLabel
 from ai_snake_lab.constants.DReplayMemory import MEM, MEM_TYPE
@@ -26,9 +29,9 @@ from ai_snake_lab.constants.DEpsilon import DEpsilon
 
 class AIAgent:
 
-    def __init__(self, seed: int):
+    def __init__(self, seed: int, db_mgr: DBMgr):
         self.explore = None
-        self.memory = ReplayMemory(seed=seed)
+        self.memory = ReplayMemory(db_mgr=db_mgr)
         self.trainer = None
         self._training_data = []
         self._game_id = None

@@ -149,7 +149,7 @@ class SimRouter:
                     continue
 
                 # Send these messages only to a specific SimClient
-                if elem in (DMQ.CUR_SIM_STATE, DMQ.GET_CUR_HIGHSCORE):
+                if elem in (DMQ.CUR_SIM_STATE, DMQ.CUR_HIGHSCORE):
                     await self.send_to_simclient(elem=elem, data=data)
 
                 # All remaining messages are broadcast to all SimClients
@@ -232,6 +232,7 @@ class SimRouter:
             await asyncio.sleep(DSim.HEARTBEAT_INTERVAL * 3)
 
     async def send_to_simclient(self, elem, data):
+        self.log.debug(f"TARGETED MSG: {elem}/{data}")
         client_id = data[0]
         payload = data[1]
         msg = {DMQ.SENDER: DMQ.SIM_SERVER, DMQ.ELEM: elem, DMQ.DATA: payload}

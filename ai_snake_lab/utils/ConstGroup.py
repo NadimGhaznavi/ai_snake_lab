@@ -1,5 +1,5 @@
 """
-Widgets/TopBar.py
+ai_snake_lab/utils/ConstGroup.py
 
     AI Snake Game Simulator
     Author: Nadim-Daniel Ghaznavi

@@ -13,19 +13,16 @@ import zmq
 import zmq.asyncio
 import numpy as np
 import sys
-import time
-
 from datetime import datetime
 
-from textual.geometry import Offset
 
 from ai_snake_lab.game.ServerGameBoard import ServerGameBoard
-from ai_snake_lab.game.GameElements import Direction
 from ai_snake_lab.game.SnakeGame import SnakeGame
 from ai_snake_lab.ai.AIAgent import AIAgent
 
 from ai_snake_lab.utils.MQHelper import mq_srv_msg
 from ai_snake_lab.utils.LabLogger import LabLogger
+from ai_snake_lab.utils.DBMgr import DBMgr
 
 from ai_snake_lab.constants.DSim import DSim
 from ai_snake_lab.constants.DMQ import DMQ, DMQ_Label
@@ -38,8 +35,14 @@ class SimServer:
     """Runs the simulation, sends updates to SimRouter, and receives commands."""
 
     def __init__(self, router_addr=None):
-        # Setup a logger
+        # Seed value for random, numpy and pytorch
+        seed = DSim.RANDOM_SEED
+
+        # Logging object
         self.log = LabLogger(client_id=DMQ.SIM_SERVER)
+
+        # SQLite database manager
+        self.db_mgr = DBMgr(seed=seed)
 
         self.ctx = zmq.asyncio.Context()
         self.socket = self.ctx.socket(zmq.DEALER)  # DEALER talks to ROUTER
@@ -60,14 +63,14 @@ class SimServer:
         # Handy shortcut
         self.send_mq = self.socket.send_json
 
-        # Server side simulation board
+        # Server side game board
         self.game_board = ServerGameBoard(DSim.BOARD_SIZE)
 
         # The Snake Game
         self.snake_game = SnakeGame(game_board=self.game_board)
 
         # The AI Agent
-        self.agent = AIAgent(seed=DSim.RANDOM_SEED)
+        self.agent = AIAgent(db_mgr=self.db_mgr, seed=seed)
 
         # Set the initial state of the simulation
         self.running = DSim.STOPPED
@@ -235,7 +238,7 @@ class SimServer:
                     self.epoch = 0
                     model = self.agent.model()
                     model.reset_parameters()
-                    self.agent.memory.clear_runtime_data()
+                    self.db_mgr.clear_runtime_data()
                     self.reset_config()
                     await self.send_ack()
 
@@ -354,7 +357,7 @@ class SimServer:
 
                 # New highscore!
                 if score > highscore:
-                    self.higscore = highscore = score
+                    self.highscore = highscore = score
                     # Send the EpsilonN a signal to instantiate a new EpsilonAlgo.
                     # This call is accepted, but ignored by the vanilla EpsilonAlog
                     agent.explore.new_highscore(score=score)
@@ -453,7 +456,7 @@ class SimServer:
                         )
 
                         # Stored memory counter
-                        stored_games = agent.memory.get_num_games()
+                        stored_games = self.db_mgr.get_num_games()
                         await self.send_mq(
                             mq_srv_msg(DMQ.STORED_GAMES, str(stored_games))
                         )

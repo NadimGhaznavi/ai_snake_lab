@@ -1,5 +1,5 @@
 """
-ai/EpsilonAlgo.py
+ai_snake_lab/ai/EpsilonAlgo.py
 
     AI Snake Game Simulator
     Author: Nadim-Daniel Ghaznavi

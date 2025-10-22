@@ -1,5 +1,5 @@
 """
-db4e/ui/TabbedPlots.py
+ai_snake_lab/ui/TabbedPlots.py
 
     Database 4 Everything
     Author: Nadim-Daniel Ghaznavi

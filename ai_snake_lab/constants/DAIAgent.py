@@ -1,5 +1,5 @@
 """
-constants/DAIAgent.py
+ai_snake_lab/constants/DAIAgent.py
 
     AI Snake Game Simulator
     Author: Nadim-Daniel Ghaznavi
