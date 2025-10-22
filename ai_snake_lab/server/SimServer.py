@@ -31,6 +31,7 @@ from ai_snake_lab.constants.DSim import DSim
 from ai_snake_lab.constants.DMQ import DMQ, DMQ_Label
 from ai_snake_lab.constants.DReplayMemory import MEM_TYPE
 from ai_snake_lab.constants.DDef import DDef
+from ai_snake_lab.constants.DAIAgent import DAIAgent
 
 
 class SimServer:
@@ -56,8 +57,10 @@ class SimServer:
             f"{DMQ.SIM_SERVER} {DMQ_Label.CONNECTED_TO_ROUTER} {self.router_addr}"
         )
 
+        # Handy shortcut
         self.send_mq = self.socket.send_json
-        # Simulation board
+
+        # Server side simulation board
         self.game_board = ServerGameBoard(DSim.BOARD_SIZE)
 
         # The Snake Game
@@ -66,8 +69,10 @@ class SimServer:
         # The AI Agent
         self.agent = AIAgent(seed=DSim.RANDOM_SEED)
 
-        # Prepare to run the main training loop as an asyncio task.
+        # Set the initial state of the simulation
         self.running = DSim.STOPPED
+
+        # Prepare to run the main training loop as an asyncio task.
         self.stop_event = asyncio.Event()  # set() means "stop"
         self.pause_event = asyncio.Event()  # set() means "paused"
         self.simulator_task = None
@@ -144,6 +149,13 @@ class SimServer:
                 self.agent.set_explore(explore_type=data)
                 self.config[DMQ.EXPLORE_TYPE] = True
                 await self.send_ack()
+
+            elif elem == DMQ.GET_SIM_STATE:
+                # A client is asking for the current state of the simulation
+                sim_client = data
+                await self.send_mq(
+                    mq_srv_msg(DMQ.CUR_SIM_STATE, [sim_client, self.running])
+                )
 
             elif elem == DMQ.LEARNING_RATE:
                 self.agent.trainer.set_learning_rate(learning_rate=data)
@@ -304,7 +316,6 @@ class SimServer:
         try:
 
             while not self.stop_event.is_set():
-                self.log.debug(f"Epoch: {epoch}")
 
                 # Pause handling
                 if self.pause_event.is_set():
@@ -349,12 +360,19 @@ class SimServer:
                     )
                     await self.send_mq(mq_srv_msg(DMQ.FOOD, mq_loc_data[DMQ.FOOD]))
 
+                    # Send the score
+                    await self.send_mq(mq_srv_msg(DMQ.SCORE, str(score)))
+
                     # Repect the configurable move delay
                     await asyncio.sleep(self.move_delay)
 
                 # Game is over
                 else:
                     epoch += 1
+                    self.log.debug(f"Epoch: {epoch}")
+
+                    # Send the score
+                    await self.send_mq(mq_srv_msg(DMQ.SCORE, str(score)))
 
                     ## RL steps
                     # Save the last move to memory
@@ -421,6 +439,36 @@ class SimServer:
                             DMQ.AVG_EPOCH_LOSS, str(agent.trainer.get_epoch_loss())
                         )
                     )
+
+                    # Model type
+                    await self.send_mq(
+                        mq_srv_msg(DMQ.MODEL_TYPE, agent.model_type_name())
+                    )
+
+                    # Move delay
+                    await self.send_mq(mq_srv_msg(DMQ.MOVE_DELAY, self.move_delay))
+
+                    # Memory type
+                    await self.send_mq(
+                        mq_srv_msg(DMQ.MEM_TYPE, self.agent.memory.mem_type())
+                    )
+
+                    # Training loops
+                    if self.agent.dynamic_training():
+                        loops = max(
+                            1, min(epoch // 250, DAIAgent.MAX_DYNAMIC_TRAINING_LOOPS)
+                        )
+                    else:
+                        loops = 1
+                    await self.send_mq(mq_srv_msg(DMQ.TRAINING_LOOPS, loops))
+
+                    # Current epsilon
+                    await self.send_mq(
+                        mq_srv_msg(DMQ.CUR_EPSILON, agent.explore.epsilon(score=score))
+                    )
+
+                    # Runtime
+                    await self.send_mq(mq_srv_msg(DMQ.RUNTIME, runtime_str))
 
         except asyncio.CancelledError:
             # task cancelled (stop/reset) — swallow and exit cleanly

@@ -10,6 +10,8 @@ constants/DReplayMemory.py
 
 from ai_snake_lab.utils.ConstGroup import ConstGroup
 
+from ai_snake_lab.constants.DLabels import DLabel
+
 
 class MEM_TYPE(ConstGroup):
     """Replay memory constants"""
@@ -28,6 +30,7 @@ class MEM_TYPE(ConstGroup):
         ADAPTIVE: ADAPTIVE_LABEL,
         RANDOM_GAME: RANDOM_GAME_LABEL,
         SHUFFLE: SHUFFLE_LABEL,
+        DLabel.N_SLASH_A: DLabel.N_SLASH_A,
     }
 
     MEMORY_TYPES: list = [

@@ -15,6 +15,7 @@ import asyncio
 import zmq
 import zmq.asyncio
 import numpy as np
+from pathlib import Path
 
 from textual.app import App, ComposeResult
 from textual.widgets import Label, Input, Button, Static, Log, Select, Checkbox
@@ -34,9 +35,11 @@ from ai_snake_lab.constants.DModelL import DModelL
 from ai_snake_lab.constants.DModelLRNN import DModelRNN
 from ai_snake_lab.constants.DAIAgent import DAIAgent
 from ai_snake_lab.constants.DMQ import DMQ, DMQ_Label
+from ai_snake_lab.constants.DDir import DDir
 
 from ai_snake_lab.game.ClientGameBoard import ClientGameBoard
 from ai_snake_lab.utils.MQHelper import mq_cli_msg
+from ai_snake_lab.utils.LabLogger import LabLogger
 
 from ai_snake_lab.ui.TabbedPlots import TabbedPlots
 
@@ -73,11 +76,12 @@ EXPLORATION_TYPES: list = [
     (DLabel.EPSILON, DEpsilon.EPSILON),
 ]
 
-# A dictionary of model_field to model_name values, for the TUI's runtime model
-# widget (Label widget).
+# Model type lookup table
 MODEL_TYPE_TABLE: dict = {
     DModelL.MODEL: DLabel.LINEAR_MODEL,
     DModelRNN.MODEL: DLabel.RNN_MODEL,
+    DLabel.N_SLASH_A: DLabel.N_SLASH_A,
+    None: DLabel.N_SLASH_A,
 }
 
 
@@ -94,14 +98,26 @@ class SimClient(App):
     game_id = var(DLabel.N_SLASH_A)
     highscore = var(DLabel.N_SLASH_A)
     highscore_event = var([])
+    mem_type = var(DLabel.N_SLASH_A)
+    model_type = var(DLabel.N_SLASH_A)
+    move_delay = var(DLabel.N_SLASH_A)
     num_frames = var(DLabel.N_SLASH_A)
     runtime = var(DLabel.N_SLASH_A)
     score = var(DLabel.N_SLASH_A)
     stored_games = var(DLabel.N_SLASH_A)
+    training_loops = var(DLabel.N_SLASH_A)
 
     def __init__(self, router_addr=None) -> None:
         """Constructor"""
         super().__init__()
+
+        snake_dir = os.path.join(Path.home(), DDir.DOT + DDir.AI_SNAKE_LAB)
+        if not os.path.exists(snake_dir):
+            os.mkdir(snake_dir)
+        client_log = os.path.join(snake_dir, DFile.CLIENT_LOG)
+        self.lablog = LabLogger(
+            client_id=DMQ.SIM_CLIENT, log_file=client_log, to_console=False
+        )
 
         # The game board, game, agent and epsilon algorithm object
         self.game_board = ClientGameBoard(20, id=DLayout.GAME_BOARD)
@@ -117,7 +133,8 @@ class SimClient(App):
         # Setup the connection to the SimRouter
         self.ctx = zmq.asyncio.Context()
         self.socket = self.ctx.socket(zmq.DEALER)
-        self.identity = f"{DMQ.SIM_CLIENT}-{np.random.randint(0,10000)}".encode()
+        self.identity_str = f"{DMQ.SIM_CLIENT}-{np.random.randint(0,10000)}"
+        self.identity = self.identity_str.encode()
         self.socket.setsockopt(zmq.IDENTITY, self.identity)
         self.router_addr = (
             router_addr or f"{DSim.PROTOCOL}://{DSim.HOST}:{DSim.MQ_PORT}"
@@ -347,6 +364,8 @@ class SimClient(App):
                 self.avg_epoch_loss = data
             elif elem == DMQ.CUR_EPSILON:
                 self.cur_epsilon = data
+            elif elem == DMQ.CUR_SIM_STATE:
+                self.lablog.debug(f"Current sim state: {data}")
             elif elem == DMQ.FOOD:
                 self.game_board.update_food(data)
             elif elem == DMQ.GAME_ID:
@@ -355,6 +374,12 @@ class SimClient(App):
                 self.epoch = data
             elif elem == DMQ.HIGHSCORE_EVENT:
                 self.highscore_event = data
+            elif elem == DMQ.MEM_TYPE:
+                self.mem_type = data
+            elif elem == DMQ.MODEL_TYPE:
+                self.model_type = data
+            elif elem == DMQ.MOVE_DELAY:
+                self.move_delay = data
             elif elem == DMQ.NUM_FRAMES:
                 self.num_frames = data
             elif elem == DMQ.RUNTIME:
@@ -367,6 +392,8 @@ class SimClient(App):
                 self.game_board.update_snake(data)
             elif elem == DMQ.STORED_GAMES:
                 self.stored_games = data
+            elif elem == DMQ.TRAINING_LOOPS:
+                self.training_loops = data
 
     async def on_mount(self):
 
@@ -398,12 +425,15 @@ class SimClient(App):
         self.register_theme(SNAKE_LAB_THEME)
         self.theme = DLayout.SNAKE_LAB_THEME
 
-        await asyncio.gather(
-            # Create an asyncio task to handle the zmq messages
-            self.handle_requests(),
-            # Start sending heartbeat messages
-            self.send_heartbeat(),
-        )
+        ## NOTE: asyncio.gather breaks Textual...
+        # Start listening for ZMQ messages
+        self.poll_task = asyncio.create_task(self.handle_requests())
+
+        # Start sending heartbeat messages
+        self.heartbeat_task = asyncio.create_task(self.send_heartbeat())
+
+        # Get the current simulation state
+        self.send_mq(mq_cli_msg(DMQ.GET_SIM_STATE, self.identity_str))
 
     async def on_quit(self):
         for task in [self.poll_task, self.heartbeat_task]:
@@ -574,6 +604,9 @@ class SimClient(App):
                 int(self.epoch), float(self.avg_epoch_loss)
             )
 
+    def watch_cur_epsilon(self, cur_epsilon_value: str):
+        self.query_one(f"#{DLayout.CUR_EPSILON}", Label).update(str(cur_epsilon_value))
+
     def watch_epoch(self, epoch_value: str):
         self.query_one(f"#{DLayout.GAME_BOX}", Vertical).border_title = (
             f"{DLabel.GAME} {self.epoch}"
@@ -613,6 +646,19 @@ class SimClient(App):
             f"{DLabel.HIGHSCORE}: {self.highscore}, {DLabel.SCORE}: {self.score}"
         )
 
+    def watch_mem_type(self, mem_type_value: str):
+        self.query_one(f"#{DLayout.CUR_MEM_TYPE}", Label).update(
+            MEM_TYPE.MEM_TYPE_TABLE[mem_type_value]
+        )
+
+    def watch_model_type(self, model_type_value: str):
+        self.query_one(f"#{DLayout.CUR_MODEL_TYPE}", Label).update(model_type_value)
+
+    def watch_move_delay(self, move_delay_value: str):
+        self.query_one(f"#{DLayout.CUR_MOVE_DELAY}", Label).update(
+            str(move_delay_value)
+        )
+
     def watch_num_frames(self, num_frames_value):
         if num_frames_value == int(MEM.NO_DATA):
             num_frames_value = DLabel.N_SLASH_A
@@ -620,9 +666,20 @@ class SimClient(App):
             num_frames_value
         )
 
+    def watch_runtime(self, runtime_value):
+        self.query_one(f"#{DLayout.RUNTIME}", Label).update(runtime_value)
+
     def watch_score(self, score_value: str):
         self.query_one(f"#{DLayout.GAME_BOX}", Vertical).border_subtitle = (
             f"{DLabel.HIGHSCORE}: {self.highscore}, {DLabel.SCORE}: {self.score}"
+        )
+
+    def watch_stored_games(self, stored_games_value: str):
+        self.query_one(f"#{DLayout.STORED_GAMES}", Label).update(stored_games_value)
+
+    def watch_training_loops(self, training_loops_value: str):
+        self.query_one(f"#{DLayout.TRAINING_LOOPS}", Label).update(
+            str(training_loops_value)
         )
 
 

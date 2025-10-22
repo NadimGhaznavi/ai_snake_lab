@@ -134,15 +134,25 @@ class SimRouter:
                     f"Received {data} command from {sender_type}/{identity_str}"
                 )
 
-            # Route logic
+            ### Routing logic
+
+            # Forward all SimClient commands to the SimServer
             if sender_type == DMQ.SIM_CLIENT:
-                # Forward TUI commands to the SimServer
                 await self.forward_to_simserver(elem=elem, data=data, sender=identity)
 
+            ## Routing rules for messages from the SimServer vary...
             elif sender_type == DMQ.SIM_SERVER:
-                # DON'T broadcast STATUS or ERROR messages
-                if elem not in (DMQ.STATUS, DMQ.ERROR):
-                    # Broadcast simulation state to all TUIs
+
+                # Drop STATUS or ERROR messages
+                if elem in (DMQ.STATUS, DMQ.ERROR):
+                    continue
+
+                # Send these messages only to a specific SimClient
+                if elem in (DMQ.CUR_SIM_STATE):
+                    await self.send_to_simclient(elem=elem, data=data)
+
+                # All remaining messages are broadcast to all SimClients
+                else:
                     await self.broadcast_to_simclients(
                         elem=elem, data=data, sender=identity
                     )
@@ -213,6 +223,14 @@ class SimRouter:
                     f"Connected client(s): {client_count}, server(s): {server_count}"
                 )
             await asyncio.sleep(DSim.HEARTBEAT_INTERVAL * 3)
+
+    async def send_to_simclient(self, elem, data):
+        client_id = data[0]
+        payload = data[1]
+        msg = {DMQ.SENDER: DMQ.SIM_SERVER, DMQ.ELEM: elem, DMQ.DATA: payload}
+        msg_bytes = zmq.utils.jsonapi.dumps(msg)
+        await self.socket.send_multipart([client_id.encode(), msg_bytes])
+        self.log.debug(f"TARGETED MSG: to: {client_id}, msg: {elem}/{payload}")
 
 
 async def main():

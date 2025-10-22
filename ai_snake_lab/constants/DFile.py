@@ -18,3 +18,4 @@ class DFile(ConstGroup):
     RUNTIME_DB: str = (
         "runtime.db"  # The SQLite DB file that stores games and game frames
     )
+    CLIENT_LOG: str = "SimClient.log"
