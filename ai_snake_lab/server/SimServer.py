@@ -139,8 +139,10 @@ class SimServer:
 
             elif elem == DMQ.CUR_NUM_CLIENTS:
                 if data == 0:
+                    self.log.info("Enabling full throttle mode")
                     self.full_throttle = True
                 else:
+                    self.log.info("Diabling full throttle mode")
                     self.full_throttle = False
 
             elif elem == DMQ.DYNAMIC_TRAINING:
@@ -167,6 +169,15 @@ class SimServer:
                 self.agent.set_explore(explore_type=data)
                 self.config[DMQ.EXPLORE_TYPE] = True
                 await self.send_ack()
+
+            elif elem == DMQ.GET_AVG_LOSS_DATA:
+                sim_client = data
+                await self.send_mq(
+                    mq_srv_msg(
+                        DMQ.AVG_LOSS_DATA,
+                        [sim_client, self.db_mgr.get_avg_loss_data()],
+                    )
+                )
 
             elif elem == DMQ.GET_CUR_HIGHSCORE:
                 sim_client = data
@@ -521,6 +532,10 @@ class SimServer:
                         # Runtime
                         await self.send_mq(mq_srv_msg(DMQ.RUNTIME, runtime_str))
 
+                    # Store the average epoch loss in the DB
+                    self.db_mgr.add_avg_loss(
+                        epoch=epoch, avg_loss=agent.trainer.get_epoch_loss()
+                    )
                     await asyncio.sleep(0)
 
         except asyncio.CancelledError:

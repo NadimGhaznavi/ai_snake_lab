@@ -15,6 +15,7 @@ class DMQ(ConstGroup):
     """MQ Constants"""
 
     AVG_EPOCH_LOSS: str = "avg_epoch_loss"
+    AVG_LOSS_DATA: str = "avg_loss_data"
     CLIENT_ID: str = "client_id"
     CMD: str = "cmd"
     CUR_EPSILON: str = "cur_epsilon"
@@ -34,6 +35,7 @@ class DMQ(ConstGroup):
     FOOD: str = "food"
     GAME_ID: str = "game_id"
     GAME_NUM: str = "game_num"
+    GET_AVG_LOSS_DATA: str = "get_avg_loss_data"
     GET_CUR_HIGHSCORE: str = "get_cur_highscore"
     GET_HIGHSCORE_EVENTS: str = "get_highscore_events"
     GET_SIM_STATE: str = "get_sim_state"

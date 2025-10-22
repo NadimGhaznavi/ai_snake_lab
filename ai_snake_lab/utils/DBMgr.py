@@ -59,6 +59,13 @@ class DBMgr:
         except Exception:
             pass  # avoid errors on interpreter shutdown
 
+    def add_avg_loss(self, epoch, avg_loss):
+        # Record the average loss after each epoch
+        self._cursor.execute(
+            "INSERT INTO avg_loss (epoch, avg_loss) VALUES (?, ?)",
+            (epoch, avg_loss),
+        )
+
     def add_game(self, final_score, total_frames):
         # Record the game
         self._cursor.execute(
@@ -93,6 +100,10 @@ class DBMgr:
     def cursor(self):
         return self._cursor
 
+    def get_avg_loss_data(self):
+        self._cursor.execute("SELECT epoch, avg_loss FROM avg_loss ORDER BY epoch ASC")
+        return self._cursor.fetchall()
+
     def get_average_game_length(self):
         self._cursor.execute("SELECT AVG(total_frames) FROM games")
         avg = self._cursor.fetchone()[0]
@@ -100,7 +111,7 @@ class DBMgr:
 
     def get_highscore_events(self):
         self._cursor.execute(
-            "SELECT epoch, score, runtime FROM highscore_events ORDER by epoch ASC"
+            "SELECT epoch, score, runtime FROM highscore_events ORDER BY epoch ASC"
         )
         return self._cursor.fetchall()
 
@@ -248,11 +259,19 @@ class DBMgr:
                 runtime TEXT NOT NULL
             );
 
+            CREATE TABLE IF NOT EXISTS avg_loss (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                epoch INTEGER NOT NULL,
+                avg_loss REAL NOT NULL
+            );
+
             CREATE UNIQUE INDEX IF NOT EXISTS idx_game_frame ON frames (game_id, frame_index);
 
             CREATE INDEX IF NOT EXISTS idx_frames_game_id ON frames (game_id);
 
             CREATE INDEX IF NOT EXISTS idx_highscore_events ON highscore_events (epoch);
+
+            CREATE INDEX IF NOT EXISTS idx_avg_loss ON avg_loss (epoch);
             """
         )
         self.conn.commit()

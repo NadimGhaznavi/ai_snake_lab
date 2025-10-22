@@ -374,6 +374,10 @@ class SimClient(App):
 
             if elem == DMQ.AVG_EPOCH_LOSS:
                 self.avg_epoch_loss = data
+            elif elem == DMQ.AVG_LOSS_DATA:
+                tabbed_plots = self.query_one(f"#{DLayout.TABBED_PLOTS}", TabbedPlots)
+                for row in data:
+                    tabbed_plots.add_loss_data(row[0], row[1])
             elif elem == DMQ.CUR_EPSILON:
                 self.cur_epsilon = data
             elif elem == DMQ.CUR_HIGHSCORE:
@@ -552,6 +556,8 @@ class SimClient(App):
         # Get the older highscore events
         await self.send_mq(mq_cli_msg(DMQ.GET_HIGHSCORE_EVENTS, self.identity_str))
 
+        # Get the older average loss per epoch data
+        await self.send_mq(mq_cli_msg(DMQ.GET_AVG_LOSS_DATA, self.identity_str))
         # Start an async process to check current simulation state. This is to
         # cover the case where a 2nd SimClient connects the running simulation and
         # changes the simulation state.

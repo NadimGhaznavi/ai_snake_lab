@@ -152,6 +152,7 @@ class SimRouter:
                 if elem in (
                     DMQ.CUR_SIM_STATE,
                     DMQ.CUR_HIGHSCORE,
+                    DMQ.AVG_LOSS_DATA,
                     DMQ.OLD_HIGHSCORE_EVENTS,
                 ):
                     await self.send_to_simclient(elem=elem, data=data)
@@ -242,7 +243,7 @@ class SimRouter:
         msg = {DMQ.SENDER: DMQ.SIM_SERVER, DMQ.ELEM: elem, DMQ.DATA: payload}
         msg_bytes = zmq.utils.jsonapi.dumps(msg)
         await self.socket.send_multipart([client_id.encode(), msg_bytes])
-        self.log.debug(f"TARGETED MSG: to: {client_id}, msg: {elem}/{payload}")
+        self.log.debug(f"TARGETED MSG: to: {client_id} - {elem}")
 
 
 async def main():
