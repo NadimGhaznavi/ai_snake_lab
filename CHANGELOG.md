@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 The the project's [CHANGELOG](https://snakelab.osoyalce.com/CHANGELOG.html) for more information.
 
+
+---
+
+## [0.11.2] - 2025-10-22
+
+### Fixed
+- PIP packages calls a synchronous main(). Add an main_async() method that main() calls.
+
 ---
 
 ## [0.11.1] - 2025-10-22
