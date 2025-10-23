@@ -1,10 +1,11 @@
 """
 ai_snake_lab/utils/DBMgr.py
 
-    AI Snake Game Simulator
+    AI Snake Lab
     Author: Nadim-Daniel Ghaznavi
     Copyright: (c) 2024-2025 Nadim-Daniel Ghaznavi
-    GitHub: https://github.com/NadimGhaznavi/ai
+    GitHub: https://github.com/NadimGhaznavi/ai_snake_lab
+    Website: https://snakelab.osoyalce.com
     License: GPL 3.0
 
 This file contains the ReplayMemory class.
@@ -18,6 +19,7 @@ from pathlib import Path
 from ai_snake_lab.constants.DDir import DDir
 from ai_snake_lab.constants.DFile import DFile
 from ai_snake_lab.constants.DReplayMemory import MEM, MEM_TYPE
+from ai_snake_lab.constants.DPlot import Plot
 
 
 class DBMgr:
@@ -65,6 +67,7 @@ class DBMgr:
             "INSERT INTO avg_loss (epoch, avg_loss) VALUES (?, ?)",
             (epoch, avg_loss),
         )
+        self.conn.commit()
 
     def add_game(self, final_score, total_frames):
         # Record the game
@@ -72,7 +75,30 @@ class DBMgr:
             "INSERT INTO games (score, total_frames) VALUES (?, ?)",
             (final_score, total_frames),
         )
+        self.conn.commit()
         return self._cursor.lastrowid  # game_id
+
+    def add_game_score(self, epoch, score):
+        # Record the game score
+        self._cursor.execute(
+            "INSERT INTO game_score (epoch, score) VALUES (?, ?)",
+            (epoch, score),
+        )
+
+        # Limit the amount of data in this table. We only need it for the
+        # game score plot which has a MAX_GAMESCORE_DATA_POINTS limit for the
+        # amount of data being plotted.
+        self._cursor.execute(
+            f"""
+            DELETE FROM game_score
+            WHERE id NOT IN (
+                SELECT id FROM game_score
+                ORDER BY epoch DESC
+                LIMIT {Plot.MAX_GAMESCORE_DATA_POINTS}
+            )
+            """
+        )
+        self.conn.commit()
 
     def add_highscore_event(self, epoch, score, runtime):
         # Record the highscore event
@@ -80,12 +106,15 @@ class DBMgr:
             "INSERT INTO highscore_events (epoch, score, runtime) VALUES (?, ?, ?)",
             (epoch, score, runtime),
         )
+        self.conn.commit()
 
     def clear_runtime_data(self):
         """Clear all data out of the runtime DB"""
         self._cursor.execute("DELETE FROM games")
         self._cursor.execute("DELETE FROM frames")
         self._cursor.execute("DELETE from highscore_events")
+        self._cursor.execute("DELETE from game_score")
+        self._cursor.execute("DELETE from avg_loss")
         self.conn.commit()
 
     def close(self):
@@ -108,6 +137,10 @@ class DBMgr:
         self._cursor.execute("SELECT AVG(total_frames) FROM games")
         avg = self._cursor.fetchone()[0]
         return int(avg) if avg else 0
+
+    def get_game_score_data(self):
+        self._cursor.execute("SELECT epoch, score from game_score ORDER by epoch ASC")
+        return self._cursor.fetchall()
 
     def get_highscore_events(self):
         self._cursor.execute(
@@ -265,6 +298,12 @@ class DBMgr:
                 avg_loss REAL NOT NULL
             );
 
+            CREATE TABLE IF NOT EXISTS game_score (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                epoch INTEGER NOT NULL,
+                score INTEGER NOT NULL            
+            );
+
             CREATE UNIQUE INDEX IF NOT EXISTS idx_game_frame ON frames (game_id, frame_index);
 
             CREATE INDEX IF NOT EXISTS idx_frames_game_id ON frames (game_id);
@@ -272,6 +311,8 @@ class DBMgr:
             CREATE INDEX IF NOT EXISTS idx_highscore_events ON highscore_events (epoch);
 
             CREATE INDEX IF NOT EXISTS idx_avg_loss ON avg_loss (epoch);
+
+            CREATE INDEX IF NOT EXISTS idx_game_score ON game_score (epoch);
             """
         )
         self.conn.commit()

@@ -1,3 +1,14 @@
+/*
+ai_snake_lab/ui/AISim.tcss
+
+    AI Snake Lab
+    Author: Nadim-Daniel Ghaznavi
+    Copyright: (c) 2024-2025 Nadim-Daniel Ghaznavi
+    GitHub: https://github.com/NadimGhaznavi/ai_snake_lab
+    Website: https://snakelab.osoyalce.com
+    License: GPL 3.0
+*/
+
 Screen {
     layout: grid;
     grid-size: 3 5;

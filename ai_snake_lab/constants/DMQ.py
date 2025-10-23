@@ -1,10 +1,11 @@
 """
 constants/DMQ.py
 
-    AI Snake Game Simulator
+    AI Snake Lab
     Author: Nadim-Daniel Ghaznavi
     Copyright: (c) 2024-2025 Nadim-Daniel Ghaznavi
-    GitHub: https://github.com/NadimGhaznavi/ai
+    GitHub: https://github.com/NadimGhaznavi/ai_snake_lab
+    Website: https://snakelab.osoyalce.com
     License: GPL 3.0
 """
 
@@ -37,6 +38,7 @@ class DMQ(ConstGroup):
     GAME_NUM: str = "game_num"
     GET_AVG_LOSS_DATA: str = "get_avg_loss_data"
     GET_CUR_HIGHSCORE: str = "get_cur_highscore"
+    GET_GAME_SCORE_DATA: str = "get_game_score_data"
     GET_HIGHSCORE_EVENTS: str = "get_highscore_events"
     GET_SIM_STATE: str = "get_sim_state"
     HEARTBEAT: str = "heartbeat"
@@ -47,6 +49,7 @@ class DMQ(ConstGroup):
     MOVE_DELAY: str = "move_delay"
     NUM_FRAMES: str = "num_frames"
     OK: str = "ok"
+    OLD_GAME_SCORE_DATA: str = "old_game_score_data"
     OLD_HIGHSCORE_EVENTS: str = "old_highscore_events"
     PAUSE: str = "pause"
     PAUSED: str = "paused"

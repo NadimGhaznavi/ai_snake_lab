@@ -1,10 +1,11 @@
 """
 ai_snake_lab/server/SimRouter.py
 
-    AI Snake Game Simulator
+    AI Snake Lab
     Author: Nadim-Daniel Ghaznavi
     Copyright: (c) 2024-2025 Nadim-Daniel Ghaznavi
-    GitHub: https://github.com/NadimGhaznavi/ai
+    GitHub: https://github.com/NadimGhaznavi/ai_snake_lab
+    Website: https://snakelab.osoyalce.com
     License: GPL 3.0
 """
 
@@ -12,29 +13,47 @@ import asyncio
 import zmq
 import zmq.asyncio
 import time
+import argparse
 
 from copy import deepcopy
 
 from ai_snake_lab.utils.LabLogger import LabLogger
+
 from ai_snake_lab.constants.DSim import DSim
 from ai_snake_lab.constants.DMQ import DMQ, DMQ_Label
+from ai_snake_lab.constants.DLabLogger import DLog
 
 
 class SimRouter:
     """Pure MQ router between TUIs and the Simulation Server."""
 
     def __init__(self):
+        # Process command line arguments
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+            "-r",
+            "--router",
+            type=str,
+            default=DSim.HOST,
+            help="IP or hostname of the AI Snake Lab router",
+        )
+        parser.add_argument("-v", "--verbose", help="Show additional information")
+        args = parser.parse_args()
+        if args.verbose:
+            loglevel = DLog.DEBUG
+        else:
+            loglevel = DLog.INFO
 
         # Setup a logger
         self.log = LabLogger(client_id=DMQ.SIM_ROUTER)
+        self.log.loglevel(loglevel)
 
         # Initialize ZMQ context
         self.ctx = zmq.asyncio.Context()
 
         # Create a ROUTER socket to manage multiple clients
         self.socket = self.ctx.socket(zmq.ROUTER)
-        # TODO replace localhost with actual host
-        host = DSim.HOST
+        host = args.router
         mq_port = DSim.MQ_PORT
         protocol = DSim.PROTOCOL
         sim_service = f"{protocol}://{host}:{mq_port}"
@@ -153,6 +172,7 @@ class SimRouter:
                     DMQ.CUR_SIM_STATE,
                     DMQ.CUR_HIGHSCORE,
                     DMQ.AVG_LOSS_DATA,
+                    DMQ.OLD_GAME_SCORE_DATA,
                     DMQ.OLD_HIGHSCORE_EVENTS,
                 ):
                     await self.send_to_simclient(elem=elem, data=data)
@@ -217,7 +237,7 @@ class SimRouter:
                 for identity in clients_copy.keys():
                     sender_type, last = self.clients[identity]
                     if now - last > (DSim.HEARTBEAT_INTERVAL * 3):
-                        self.log.info(f"Client {identity} timed out")
+                        self.log.info(f"Removing inactive client: {identity}")
                         del self.clients[identity]
                     else:
                         if sender_type == DMQ.SIM_SERVER:
@@ -234,16 +254,15 @@ class SimRouter:
                 self.log.info(
                     f"Connected client(s): {client_count}, server(s): {server_count}"
                 )
-            await asyncio.sleep(DSim.HEARTBEAT_INTERVAL * 3)
+            await asyncio.sleep(DSim.HEARTBEAT_INTERVAL * 4)
 
     async def send_to_simclient(self, elem, data):
-        self.log.debug(f"TARGETED MSG: {elem}/{data}")
         client_id = data[0]
         payload = data[1]
         msg = {DMQ.SENDER: DMQ.SIM_SERVER, DMQ.ELEM: elem, DMQ.DATA: payload}
         msg_bytes = zmq.utils.jsonapi.dumps(msg)
         await self.socket.send_multipart([client_id.encode(), msg_bytes])
-        self.log.debug(f"TARGETED MSG: to: {client_id} - {elem}")
+        self.log.debug(f"Targeted MQ message to {client_id}: {elem}/{data}")
 
 
 async def main():

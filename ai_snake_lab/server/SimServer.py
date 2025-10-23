@@ -1,10 +1,11 @@
 """
 ai_snake_lab/server/SimServer.py
 
-    AI Snake Game Simulator
+    AI Snake Lab
     Author: Nadim-Daniel Ghaznavi
     Copyright: (c) 2024-2025 Nadim-Daniel Ghaznavi
-    GitHub: https://github.com/NadimGhaznavi/ai
+    GitHub: https://github.com/NadimGhaznavi/ai_snake_lab
+    Website: https://snakelab.osoyalce.com
     License: GPL 3.0
 """
 
@@ -13,6 +14,7 @@ import zmq
 import zmq.asyncio
 import numpy as np
 import sys
+import argparse
 from datetime import datetime
 
 
@@ -29,17 +31,34 @@ from ai_snake_lab.constants.DMQ import DMQ, DMQ_Label
 from ai_snake_lab.constants.DReplayMemory import MEM_TYPE
 from ai_snake_lab.constants.DDef import DDef
 from ai_snake_lab.constants.DAIAgent import DAIAgent
+from ai_snake_lab.constants.DLabLogger import DLog
 
 
 class SimServer:
     """Runs the simulation, sends updates to SimRouter, and receives commands."""
 
     def __init__(self, router_addr=None):
+        # Process command line arguments
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+            "-r",
+            "--router",
+            type=str,
+            default=DSim.HOST,
+            help="IP or hostname of the AI Snake Lab router",
+        )
+        parser.add_argument("-v", "--verbose", help="Show additional information")
+        args = parser.parse_args()
+        if args.verbose:
+            loglevel = DLog.DEBUG
+        else:
+            loglevel = DLog.INFO
         # Seed value for random, numpy and pytorch
         seed = DSim.RANDOM_SEED
 
         # Logging object
         self.log = LabLogger(client_id=DMQ.SIM_SERVER)
+        self.log.loglevel(loglevel)
 
         # SQLite database manager
         self.db_mgr = DBMgr(seed=seed)
@@ -53,7 +72,7 @@ class SimServer:
         self.socket.setsockopt(zmq.IDENTITY, self.identity)
 
         self.router_addr = (
-            router_addr or f"{DSim.PROTOCOL}://{DSim.HOST}:{DSim.MQ_PORT}"
+            router_addr or f"{DSim.PROTOCOL}://{args.router}:{DSim.MQ_PORT}"
         )
         self.socket.connect(self.router_addr)
         self.log.info(
@@ -139,10 +158,12 @@ class SimServer:
 
             elif elem == DMQ.CUR_NUM_CLIENTS:
                 if data == 0:
-                    self.log.info("Enabling full throttle mode")
+                    if not self.full_throttle:
+                        self.log.info("Enabling full throttle mode")
                     self.full_throttle = True
                 else:
-                    self.log.info("Diabling full throttle mode")
+                    if self.full_throttle:
+                        self.log.info("Disabling full throttle mode")
                     self.full_throttle = False
 
             elif elem == DMQ.DYNAMIC_TRAINING:
@@ -183,6 +204,15 @@ class SimServer:
                 sim_client = data
                 await self.send_mq(
                     mq_srv_msg(DMQ.CUR_HIGHSCORE, [sim_client, self.highscore])
+                )
+
+            elif elem == DMQ.GET_GAME_SCORE_DATA:
+                sim_client = data
+                await self.send_mq(
+                    mq_srv_msg(
+                        DMQ.OLD_GAME_SCORE_DATA,
+                        [sim_client, self.db_mgr.get_game_score_data()],
+                    )
                 )
 
             elif elem == DMQ.GET_HIGHSCORE_EVENTS:
@@ -383,9 +413,6 @@ class SimServer:
                     agent.explore.new_highscore(score=score)
                     elapsed_secs = (datetime.now() - start_time).total_seconds()
                     runtime_str = minutes_to_uptime(elapsed_secs)
-                    self.db_mgr.add_highscore_event(
-                        epoch=epoch, score=score, runtime=runtime_str
-                    )
                     if not self.full_throttle:
                         await self.send_mq(
                             mq_srv_msg(
@@ -393,6 +420,9 @@ class SimServer:
                                 [str(epoch), str(score), runtime_str],
                             )
                         )
+                    self.db_mgr.add_highscore_event(
+                        epoch=epoch, score=score, runtime=runtime_str
+                    )
 
                 # We're still playing the game...
                 if not game_over:
@@ -531,6 +561,9 @@ class SimServer:
 
                         # Runtime
                         await self.send_mq(mq_srv_msg(DMQ.RUNTIME, runtime_str))
+
+                    # Add game score data to the DB
+                    self.db_mgr.add_game_score(epoch, score)
 
                     # Store the average epoch loss in the DB
                     self.db_mgr.add_avg_loss(

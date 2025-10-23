@@ -1,10 +1,11 @@
 """
 ai_snake_lab/utils/LabLogger.py
 
-    Database 4 Everything
+    AI Snake Lab
     Author: Nadim-Daniel Ghaznavi
     Copyright: (c) 2024-2025 Nadim-Daniel Ghaznavi
-    GitHub: https://github.com/NadimGhaznavi/db4e
+    GitHub: https://github.com/NadimGhaznavi/ai_snake_lab
+    Website: https://snakelab.osoyalce.com
     License: GPL 3.0
 
 """
@@ -18,7 +19,7 @@ class LabLogger:
     def __init__(self, client_id: str, log_file=None, to_console=True):
         self._logger = logging.getLogger(client_id)
 
-        # Set the logger log level, should always be 'debug'
+        # The default logger log level
         self._logger.setLevel(LOG_LEVELS[DLog.DEBUG])
 
         formatter = logging.Formatter(
@@ -42,9 +43,12 @@ class LabLogger:
 
         self._logger.propagate = False
 
+    def loglevel(self, loglevel):
+        self._logger.setLevel(LOG_LEVELS[loglevel])
+
     def shutdown(self):
         # Exit cleanly
-        logging.shutdown()  # Flush all handlers
+        logging.shutdown()  # Flush all handler
 
     # Basic log message handling, wraps Python's logging object
     def info(self, message, extra=None):

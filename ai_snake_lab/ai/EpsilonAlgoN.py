@@ -1,11 +1,12 @@
 """
 ai_snake_lab/ai/EpsilonAlgoN.py
 
-AI Snake Game Simulator
-Author: Nadim-Daniel Ghaznavi
-Copyright: (c) 2024-2025 Nadim-Daniel Ghaznavi
-GitHub: https://github.com/NadimGhaznavi/ai
-License: GPL 3.0
+    AI Snake Lab
+    Author: Nadim-Daniel Ghaznavi
+    Copyright: (c) 2024-2025 Nadim-Daniel Ghaznavi
+    GitHub: https://github.com/NadimGhaznavi/ai_snake_lab
+    Website: https://snakelab.osoyalce.com
+    License: GPL 3.0
 
 This class provides a different approach to exploration in the context of the the
 SnakeGame. Observation of the game score plot shows that the AI does not fully

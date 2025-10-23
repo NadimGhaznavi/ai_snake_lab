@@ -1,20 +1,21 @@
 """
-ai_snake_lab/ui/AISim.py
+ai_snake_lab/ui/SimClient.py
 
-    AI Snake Game Simulator
+    AI Snake Lab
     Author: Nadim-Daniel Ghaznavi
     Copyright: (c) 2024-2025 Nadim-Daniel Ghaznavi
-    GitHub: https://github.com/NadimGhaznavi/ai
+    GitHub: https://github.com/NadimGhaznavi/ai_snake_lab
+    Website: https://snakelab.osoyalce.com
     License: GPL 3.0
 """
 
-import time
+import argparse
 import sys, os
-from datetime import datetime, timedelta
 import asyncio
 import zmq
 import zmq.asyncio
 import numpy as np
+import time
 from pathlib import Path
 
 from textual.app import App, ComposeResult
@@ -30,12 +31,11 @@ from ai_snake_lab.constants.DLayout import DLayout
 from ai_snake_lab.constants.DLabels import DLabel
 from ai_snake_lab.constants.DReplayMemory import MEM_TYPE, MEM
 from ai_snake_lab.constants.DSim import DSim
-from ai_snake_lab.constants.DPlot import Plot
 from ai_snake_lab.constants.DModelL import DModelL
 from ai_snake_lab.constants.DModelLRNN import DModelRNN
-from ai_snake_lab.constants.DAIAgent import DAIAgent
 from ai_snake_lab.constants.DMQ import DMQ, DMQ_Label
 from ai_snake_lab.constants.DDir import DDir
+from ai_snake_lab.constants.DLabLogger import DLog
 
 from ai_snake_lab.game.ClientGameBoard import ClientGameBoard
 from ai_snake_lab.utils.MQHelper import mq_cli_msg
@@ -107,17 +107,15 @@ class SimClient(App):
     stored_games = var(DLabel.N_SLASH_A)
     training_loops = var(DLabel.N_SLASH_A)
 
-    def __init__(self, router_addr=None) -> None:
+    def __init__(self, router, loglevel, logfile) -> None:
         """Constructor"""
         super().__init__()
 
-        snake_dir = os.path.join(Path.home(), DDir.DOT + DDir.AI_SNAKE_LAB)
-        if not os.path.exists(snake_dir):
-            os.mkdir(snake_dir)
-        client_log = os.path.join(snake_dir, DFile.CLIENT_LOG)
+        # Setup logging
         self.lablog = LabLogger(
-            client_id=DMQ.SIM_CLIENT, log_file=client_log, to_console=False
+            client_id=DMQ.SIM_CLIENT, log_file=logfile, to_console=False
         )
+        self.lablog.loglevel(loglevel)
 
         # The game board, game, agent and epsilon algorithm object
         self.game_board = ClientGameBoard(20, id=DLayout.GAME_BOARD)
@@ -136,9 +134,7 @@ class SimClient(App):
         self.identity_str = f"{DMQ.SIM_CLIENT}-{np.random.randint(0,10000)}"
         self.identity = self.identity_str.encode()
         self.socket.setsockopt(zmq.IDENTITY, self.identity)
-        self.router_addr = (
-            router_addr or f"{DSim.PROTOCOL}://{DSim.HOST}:{DSim.MQ_PORT}"
-        )
+        self.router_addr = f"{DSim.PROTOCOL}://{router}:{DSim.MQ_PORT}"
         self.stop_event = asyncio.Event()  # To control the simulation loop
         self.heartbeat_stop_event = asyncio.Event()  # To control the heartbeat loop
         self.socket.connect(self.router_addr)
@@ -377,7 +373,9 @@ class SimClient(App):
             elif elem == DMQ.AVG_LOSS_DATA:
                 tabbed_plots = self.query_one(f"#{DLayout.TABBED_PLOTS}", TabbedPlots)
                 for row in data:
-                    tabbed_plots.add_loss_data(row[0], row[1])
+                    epoch = row[0]
+                    loss = row[1]
+                    tabbed_plots.add_loss_data(row[0], row[1], plot=False)
             elif elem == DMQ.CUR_EPSILON:
                 self.cur_epsilon = data
             elif elem == DMQ.CUR_HIGHSCORE:
@@ -417,11 +415,24 @@ class SimClient(App):
                 self.move_delay = data
             elif elem == DMQ.NUM_FRAMES:
                 self.num_frames = data
+            elif elem == DMQ.OLD_GAME_SCORE_DATA:
+                tabbed_plots = self.query_one(f"#{DLayout.TABBED_PLOTS}", TabbedPlots)
+                for event in data:
+                    epoch = event[0]
+                    score = event[1]
+                    tabbed_plots.add_game_score_data(
+                        epoch=epoch, score=score, plot=False
+                    )
             elif elem == DMQ.OLD_HIGHSCORE_EVENTS:
+                tabbed_plots = self.query_one(f"#{DLayout.TABBED_PLOTS}", TabbedPlots)
                 highscores_widget = self.query_one(f"#{DLayout.HIGHSCORES}", Log)
                 for event in data:
-                    highscores_widget.write_line(
-                        f"{event[0]:7,d}{event[1]:7d}{event[2]:>13s}"
+                    epoch = event[0]
+                    score = event[1]
+                    runtime = event[2]
+                    highscores_widget.write_line(f"{epoch:7,d}{score:7d}{runtime:>13s}")
+                    tabbed_plots.add_highscore_data(
+                        epoch=epoch, score=score, plot=False
                     )
             elif elem == DMQ.RUNTIME:
                 self.runtime = data
@@ -558,6 +569,10 @@ class SimClient(App):
 
         # Get the older average loss per epoch data
         await self.send_mq(mq_cli_msg(DMQ.GET_AVG_LOSS_DATA, self.identity_str))
+
+        # Get the older game score data
+        await self.send_mq(mq_cli_msg(DMQ.GET_GAME_SCORE_DATA, self.identity_str))
+
         # Start an async process to check current simulation state. This is to
         # cover the case where a 2nd SimClient connects the running simulation and
         # changes the simulation state.
@@ -747,7 +762,7 @@ class SimClient(App):
 
     def watch_score(self, score_value: str):
         self.query_one(f"#{DLayout.GAME_BOX}", Vertical).border_subtitle = (
-            f"{DLabel.HIGHSCORE}: {self.highscore}, {DLabel.SCORE}: {self.score}"
+            f"{DLabel.HIGHSCORE}: {self.highscore}, {DLabel.SCORE}: {score_value}"
         )
 
     def watch_stored_games(self, stored_games_value: str):
@@ -797,7 +812,35 @@ def minutes_to_uptime(seconds: int):
 
 # This is for the pyPI ai-snake-lab entry point to work....
 def main():
-    app = SimClient()
+    # Process command line arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-r",
+        "--router",
+        type=str,
+        default=DSim.HOST,
+        help="IP or hostname of the AI Snake Lab router",
+    )
+    parser.add_argument("-v", "--verbose", help="Show additional information")
+    args = parser.parse_args()
+    if args.verbose:
+        loglevel = DLog.DEBUG
+    else:
+        loglevel = DLog.INFO
+
+    # The SimClient log file
+    snake_dir = os.path.join(Path.home(), DDir.DOT + DDir.AI_SNAKE_LAB)
+    if not os.path.exists(snake_dir):
+        os.mkdir(snake_dir)
+    logfile = os.path.join(snake_dir, DFile.CLIENT_LOG)
+
+    print(f"Connecting to SimRouter: {args.router}")
+    print(f"Log file: {logfile}")
+    if args.verbose:
+        print("Verbose logging enabled")
+    time.sleep(3)
+
+    app = SimClient(router=args.router, loglevel=loglevel, logfile=logfile)
     app.run()
 
 

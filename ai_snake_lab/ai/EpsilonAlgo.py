@@ -1,12 +1,12 @@
 """
 ai_snake_lab/ai/EpsilonAlgo.py
 
-    AI Snake Game Simulator
+    AI Snake Lab
     Author: Nadim-Daniel Ghaznavi
     Copyright: (c) 2024-2025 Nadim-Daniel Ghaznavi
-    GitHub: https://github.com/NadimGhaznavi/ai
+    GitHub: https://github.com/NadimGhaznavi/ai_snake_lab
+    Website: https://snakelab.osoyalce.com
     License: GPL 3.0
-
 
 A class to encapsulate the functionality of the epsilon algorithm. The algorithm
 injects random moves at the beginning of the simulation. The amount of moves

@@ -36,12 +36,12 @@ dependencies = [
     "pytest-mock>=3.15.1",
     "textual-dev>=1.7.0",
     "pyzmq>=27.1.0",
-    "uvicorn>=0.38.0",
-    "fastapi>=0.119.0",
 ]
 
 [project.scripts]
-ai-snake-lab = "ai_snake_lab.ui.AISim:main"
+sim-client = "ai_snake_lab.ui.SimClient:main"
+sim-server = "ai_snake_lab.server.SimServer:main"
+sim-router = "ai_snake_lab.server.SimRouter:main"
 
 [project.urls]
 "Bug Tracker" = "https://github.com/NadimGhaznavi/ai_snake_lab/issues"

@@ -9,11 +9,39 @@ The the project's [CHANGELOG](https://snakelab.osoyalce.com/CHANGELOG.html) for 
 
 ---
 
-## [Unreleased] - 2025-10-19
+## [Unreleased] - 2025-10-22
 
 ### Added
-- Updated `pages/project_layout.md`
-- Added `pyzmq`, `uvicorn` and `fastapi` to `pyproject.toml` and updated the `poetry.lock` file.
+- Complete redesign:
+  - Client/Server architecture to make the simulations fully deterministic. The Textual asyncio loop was polluting the simualtion, yielding different results with the same simulation starting parameters.
+    - Split the `AISim` into `SimServer` and `SimClient`.
+    - Added `SimRouter` and implemented ZeroMQ based messaging.
+    - Supports running the multiple `SimClients` connected to the same `SimServer`.
+    - Supports running the `SimClient`, `SimRouter` and `SimServer` on different machines.
+    - Added a new `DMQ` constants file to support *ZeroMQ* messaging.
+  - Took the SQLite (mostly) out of `ReplayMemory` and into a new `DbMgr` class.
+    - Added `highscore_events`, `games_score` and `avg_loss` tables.
+  - Updated website content:
+    - Added additional *architecture* and *schema* pages to the website.
+      - Added additional images to the architecture page.
+    - Updated the main page.
+  - Implemented targeted messaging:
+    - When a `SimClient` connects to a running simulation, it receives old *highscore*, *game score* and *average loss* data so the TUI plots are up to date.
+  - Command line switches:
+    - To increase verbosity of console output for the `SimServer` and `SimRouter` and for the `SimClient's` log file.
+    - To specify the hostname of the `SimRouter` if it's not running locally.
+  - Added a *logger* based `LabLogger` module for cleaner console and log file output.
+    - Added a `DLabLogger` constants file.
+  - Implemented *full throttle* mode for the `SimServer`.
+    - Automatically enabled when there are no `SimClients` connected to the `SimRouter`.
+    - Automatically disabled when a `SimClient` connects.
+    - Increases simulation speed by a factor of about three!!
+  - Made the README a pointer to the project website.
+
+### Fixed
+  - All TUI elements are now properly updated from the running simulation
+  - Header on all project files.
+    - Added a line pointing at the project website: https://snakelab.osoyalce.com/
 
 ---
 
