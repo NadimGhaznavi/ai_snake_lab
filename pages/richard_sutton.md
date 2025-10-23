@@ -36,3 +36,4 @@ Title: Richard S. Sutton
 
 - [Reinforcement Learning: An Introduction](http://www.incompleteideas.net/book/RLbook2020trimmed.pdf) - [Notation](/pages/sutton_notation.html) 
 - [The Bitter Lesson](http://www.incompleteideas.net/IncIdeas/BitterLesson.html)
+- [The Alberta Plan for AI Research](https://arxiv.org/pdf/2208.11173)
