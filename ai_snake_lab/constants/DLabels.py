@@ -1,10 +1,11 @@
 """
 constants/DLabels.py
 
-    AI Snake Game Simulator
+    AI Snake Lab
     Author: Nadim-Daniel Ghaznavi
     Copyright: (c) 2024-2025 Nadim-Daniel Ghaznavi
-    GitHub: https://github.com/NadimGhaznavi/ai
+    GitHub: https://github.com/NadimGhaznavi/ai_snake_lab
+    Website: https://snakelab.osoyalce.com
     License: GPL 3.0
 """
 
@@ -45,12 +46,15 @@ class DLabel(ConstGroup):
     QUIT: str = "Quit"
     RANDOM_FRAMES: str = "Random Frames"
     RESTART: str = "Restart"
+    RESET: str = "Reset"
+    RESUME: str = "Resume"
     RNN_MODEL: str = "RNN"
     RUNTIME: str = "Runtime"
     RUNTIME_VALUES: str = "Runtime Values"
     SCORE: str = "Score"
     SETTINGS: str = "Configuration Settings"
     START: str = "Start"
+    STOP: str = "Stop"
     STORED_GAMES: str = "Stored Games"
     TIME: str = "Time"
     TRAINING_GAME_ID: str = "Training Game ID"

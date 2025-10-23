@@ -1,10 +1,11 @@
 """
 constants/DFile.py
 
-    AI Snake Game Simulator
+    AI Snake Lab
     Author: Nadim-Daniel Ghaznavi
     Copyright: (c) 2024-2025 Nadim-Daniel Ghaznavi
-    GitHub: https://github.com/NadimGhaznavi/ai
+    GitHub: https://github.com/NadimGhaznavi/ai_snake_lab
+    Website: https://snakelab.osoyalce.com
     License: GPL 3.0
 """
 
@@ -18,3 +19,4 @@ class DFile(ConstGroup):
     RUNTIME_DB: str = (
         "runtime.db"  # The SQLite DB file that stores games and game frames
     )
+    CLIENT_LOG: str = "SimClient.log"

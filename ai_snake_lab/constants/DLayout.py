@@ -1,10 +1,11 @@
 """
 constants/DLayout.py
 
-    AI Snake Game Simulator
+    AI Snake Lab
     Author: Nadim-Daniel Ghaznavi
     Copyright: (c) 2024-2025 Nadim-Daniel Ghaznavi
-    GitHub: https://github.com/NadimGhaznavi/ai
+    GitHub: https://github.com/NadimGhaznavi/ai_snake_lab
+    Website: https://snakelab.osoyalce.com
     License: GPL 3.0
 """
 
@@ -17,9 +18,12 @@ class DLayout(ConstGroup):
     BUTTON_BOX: str = "button_box"
     BUTTON_PAUSE: str = "button_pause"
     BUTTON_QUIT: str = "button_quit"
+    BUTTON_RESET: str = "button_reset"
     BUTTON_RESTART: str = "button_restart"
+    BUTTON_RESUME: str = "button_resume"
     BUTTON_ROW: str = "button_row"
     BUTTON_START: str = "button_start"
+    BUTTON_STOP: str = "button_stop"
     BUTTON_DEFAULTS: str = "button_defaults"
     BUTTON_UPDATE: str = "button_update"
     CUR_EPSILON: str = "cur_epsilon"

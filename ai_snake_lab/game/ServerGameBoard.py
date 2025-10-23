@@ -1,7 +1,7 @@
 """
-ai_snake_lab/game/GameBoard.py
+ai_snake_lab/game/ServerGameBoard.py
 
-    AI Snake Lab
+    AI Snake Game Simulator
     Author: Nadim-Daniel Ghaznavi
     Copyright: (c) 2024-2025 Nadim-Daniel Ghaznavi
     GitHub: https://github.com/NadimGhaznavi/ai_snake_lab
@@ -11,58 +11,21 @@ ai_snake_lab/game/GameBoard.py
 
 import numpy as np
 
-from textual.scroll_view import ScrollView
-from textual.geometry import Offset, Region, Size
-from textual.strip import Strip
-from textual.reactive import var
-
-from rich.segment import Segment
-from rich.style import Style
-
+from textual.geometry import Offset, Size
 from ai_snake_lab.game.GameElements import Direction
 
-emptyA = "#111111"
-emptyB = "#000000"
-food = "#940101"
-snake = "#025b02"
-snake_head = "#16e116"
+from ai_snake_lab.constants.DMQ import DMQ
 
 
-class GameBoard(ScrollView):
-    COMPONENT_CLASSES = {
-        "gameboard--emptyA-square",
-        "gameboard--emptyB-square",
-        "gameboard--food-square",
-        "gameboard--snake-square",
-        "gameboard--snake-head-square",
-    }
+class ServerGameBoard:
 
-    DEFAULT_CSS = """
-    GameBoard > .gameboard--emptyA-square {
-        background: #111111;
-    }
-    GameBoard > .gameboard--emptyB-square {
-        background: #000000;
-    }
-    GameBoard > .gameboard--food-square {
-        background: #940101;
-    }
-    GameBoard > .gameboard--snake-square {
-        background: #025b02;
-    }
-    GameBoard > .gameboard--snake-head-square {
-        background: #0ca30c;
-    }
-    """
-
-    food = var(Offset(0, 0))
-    snake_head = var(Offset(0, 0))
-    snake_body = var([])
+    food = Offset(0, 0)
+    snake_head = Offset(0, 0)
+    snake_body = []
     direction = Direction.RIGHT
     last_dirs = [0, 0, 1, 0]
 
-    def __init__(self, board_size: int, id=None) -> None:
-        super().__init__(id=id)
+    def __init__(self, board_size: int) -> None:
         self._board_size = board_size
         self.virtual_size = Size(board_size * 2, board_size)
 
@@ -204,65 +167,17 @@ class GameBoard(ScrollView):
             return True
         return False
 
-    def render_line(self, y: int) -> Strip:
-        scroll_x, scroll_y = self.scroll_offset
-        y += scroll_y
-        row_index = y
-
-        emptyA = self.get_component_rich_style("gameboard--emptyA-square")
-        emptyB = self.get_component_rich_style("gameboard--emptyB-square")
-        food = self.get_component_rich_style("gameboard--food-square")
-        snake = self.get_component_rich_style("gameboard--snake-square")
-        snake_head = self.get_component_rich_style("gameboard--snake-head-square")
-
-        if row_index >= self._board_size:
-            return Strip.blank(self.size.width)
-
-        is_odd = row_index % 2
-
-        def get_square_style(column: int, row: int) -> Style:
-            if self.food == Offset(column, row):
-                square_style = food
-            elif self.snake_head == Offset(column, row):
-                square_style = snake_head
-            elif Offset(column, row) in self.snake_body:
-                square_style = snake
-            else:
-                square_style = emptyA if (column + is_odd) % 2 else emptyB
-            return square_style
-
-        segments = [
-            Segment(" " * 2, get_square_style(column, row_index))
-            for column in range(self._board_size)
-        ]
-        strip = Strip(segments, self._board_size * 2)
-        # Crop the strip so that is covers the visible area
-        strip = strip.crop(scroll_x, scroll_x + self.size.width)
-        return strip
-
-    def watch_food(self, previous_food: Offset, food: Offset) -> None:
-        """Called when the food square changes."""
-
-        def get_square_region(square_offset: Offset) -> Region:
-            """Get region relative to widget from square coordinate."""
-            x, y = square_offset
-            region = Region(x * 2, y, 2, 1)
-            # Move the region into the widgets frame of reference
-            region = region.translate(-self.scroll_offset)
-            return region
-
-        # Refresh the previous food square
-        self.refresh(get_square_region(previous_food))
-
-        # Refresh the new food square
-        self.refresh(get_square_region(food))
+    def location_data(self):
+        return {
+            DMQ.SNAKE_HEAD: (DMQ.SNAKE_HEAD, self.snake_head),
+            DMQ.SNAKE_BODY: (DMQ.SNAKE_BODY, self.snake_body),
+            DMQ.FOOD: (DMQ.FOOD, self.food),
+        }
 
     def update_food(self, food: Offset) -> None:
         self.food = food
-        self.refresh()
 
     def update_snake(self, snake: list[Offset], direction: Direction) -> None:
         self.direction = direction
         self.snake_head = snake[0]
         self.snake_body = snake[1:]
-        self.refresh()

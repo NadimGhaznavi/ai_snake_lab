@@ -1,10 +1,11 @@
 """
 constants/DPlot.py
 
-    AI Snake Game Simulator
+    AI Snake Lab
     Author: Nadim-Daniel Ghaznavi
     Copyright: (c) 2024-2025 Nadim-Daniel Ghaznavi
-    GitHub: https://github.com/NadimGhaznavi/ai
+    GitHub: https://github.com/NadimGhaznavi/ai_snake_lab
+    Website: https://snakelab.osoyalce.com
     License: GPL 3.0
 """
 
@@ -20,5 +21,7 @@ class Plot(ConstGroup):
 
     # The average is calculated by dividing the MAX_DATA_POINTS by this number
     AVG_DIVISOR: int = 40
-    MAX_DATA_POINTS: int = 200  # Maximum number of data points in the gamescore plot
+    MAX_GAMESCORE_DATA_POINTS: int = (
+        200  # Maximum number of data points in the gamescore plot
+    )
     MAX_LOSS_DATA_POINTS: int = 75  # Max number of data points in the loss plot

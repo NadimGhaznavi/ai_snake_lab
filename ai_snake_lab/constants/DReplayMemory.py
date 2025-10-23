@@ -1,14 +1,17 @@
 """
 constants/DReplayMemory.py
 
-    AI Snake Game Simulator
+    AI Snake Lab
     Author: Nadim-Daniel Ghaznavi
     Copyright: (c) 2024-2025 Nadim-Daniel Ghaznavi
-    GitHub: https://github.com/NadimGhaznavi/ai
+    GitHub: https://github.com/NadimGhaznavi/ai_snake_lab
+    Website: https://snakelab.osoyalce.com
     License: GPL 3.0
 """
 
 from ai_snake_lab.utils.ConstGroup import ConstGroup
+
+from ai_snake_lab.constants.DLabels import DLabel
 
 
 class MEM_TYPE(ConstGroup):
@@ -28,6 +31,7 @@ class MEM_TYPE(ConstGroup):
         ADAPTIVE: ADAPTIVE_LABEL,
         RANDOM_GAME: RANDOM_GAME_LABEL,
         SHUFFLE: SHUFFLE_LABEL,
+        DLabel.N_SLASH_A: DLabel.N_SLASH_A,
     }
 
     MEMORY_TYPES: list = [

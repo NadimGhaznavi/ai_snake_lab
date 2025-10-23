@@ -1,6 +1,6 @@
 [project]
 name = "ai-snake-lab"
-version = "0.10.1"
+version = "0.11.0"
 description = "Interactive reinforcement learning sandbox for experimenting with AI agents in a classic Snake Game environment."
 authors = [{ name = "Nadim-Daniel Ghaznavi", email = "nghaznavi@gmail.com" }]
 license = { text = "GPL-3.0" }
@@ -34,11 +34,14 @@ dependencies = [
     "torchvision>=0.23.0",
     "pytest>=8.4.2",
     "pytest-mock>=3.15.1",
-    "textual-dev>=1.7.0"
+    "textual-dev>=1.7.0",
+    "pyzmq>=27.1.0",
 ]
 
 [project.scripts]
-ai-snake-lab = "ai_snake_lab.ui.AISim:main"
+sim-client = "ai_snake_lab.ui.SimClient:main"
+sim-server = "ai_snake_lab.server.SimServer:main"
+sim-router = "ai_snake_lab.server.SimRouter:main"
 
 [project.urls]
 "Bug Tracker" = "https://github.com/NadimGhaznavi/ai_snake_lab/issues"

@@ -1,10 +1,11 @@
 """
-constants/DGameBoard.py
+constants/DSim.py
 
-    AI Snake Game Simulator
+    AI Snake Lab
     Author: Nadim-Daniel Ghaznavi
     Copyright: (c) 2024-2025 Nadim-Daniel Ghaznavi
-    GitHub: https://github.com/NadimGhaznavi/ai
+    GitHub: https://github.com/NadimGhaznavi/ai_snake_lab
+    Website: https://snakelab.osoyalce.com
     License: GPL 3.0
 """
 
@@ -13,6 +14,9 @@ from ai_snake_lab.utils.ConstGroup import ConstGroup
 
 class DSim(ConstGroup):
     """Simulation Constants"""
+
+    # Size of the game board
+    BOARD_SIZE: int = 20
 
     # Random, random seed to make simulation runs repeatable
     RANDOM_SEED: int = 1970
@@ -34,3 +38,13 @@ class DSim(ConstGroup):
     # Stats dictionary keys
     GAME_SCORE: str = "game_score"
     GAME_NUM: str = "game_num"
+
+    ## Distributed settings
+    # Server protocol and port
+    HOST: str = "sally.osoyalce.com"
+    PROTOCOL: str = "tcp"
+    MQ_PORT: int = 5555
+
+    # Heartbeat interval, how often clients send "I'm alive" messages to the router.
+    # In seconds.
+    HEARTBEAT_INTERVAL: int = 5

@@ -1,10 +1,11 @@
 """
-Modules/ModelRNN.py
+ai_snake_lab/ai/models/ModelRNN.py
 
     AI Snake Game Simulator
     Author: Nadim-Daniel Ghaznavi
     Copyright: (c) 2024-2025 Nadim-Daniel Ghaznavi
-    GitHub: https://github.com/NadimGhaznavi/ai
+    GitHub: https://github.com/NadimGhaznavi/ai_snake_lab
+    Website: https://snakelab.osoyalce.com
     License: GPL 3.0
 """
 
