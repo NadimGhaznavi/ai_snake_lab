@@ -118,3 +118,4 @@ Richard S. Sutton is also an inspiration to me. His thoughts on *Reinforcement L
 - Richard Sutton [quotes](/pages/richard_sutton.html) and other materials.
 - [Useful Plots to Diagnose your Neural Network](https://medium.com/data-science/useful-plots-to-diagnose-your-neural-network-521907fa2f45) by George V Jose
 - [A Deep Dive into Learning Curves in Machine Learning](https://wandb.ai/mostafaibrahim17/ml-articles/reports/A-Deep-Dive-Into-Learning-Curves-in-Machine-Learning--Vmlldzo0NjA1ODY0) by Mostafa Ibrahim
+

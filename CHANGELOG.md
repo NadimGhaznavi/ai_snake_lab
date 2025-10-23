@@ -9,6 +9,13 @@ The the project's [CHANGELOG](https://snakelab.osoyalce.com/CHANGELOG.html) for 
 
 ---
 
+## [0.11.1] - 2025-10-22
+
+### Fixed
+- Git tag issue
+
+---
+
 ## [0.11.0] - 2025-10-22
 
 ### Added
