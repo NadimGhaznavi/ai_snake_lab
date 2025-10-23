@@ -9,7 +9,7 @@ The the project's [CHANGELOG](https://snakelab.osoyalce.com/CHANGELOG.html) for 
 
 ---
 
-## [Unreleased] - 2025-10-22
+## [0.11.0] - 2025-10-22
 
 ### Added
 - Complete redesign:
