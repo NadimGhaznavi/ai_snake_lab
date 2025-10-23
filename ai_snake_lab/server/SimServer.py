@@ -634,10 +634,14 @@ def minutes_to_uptime(seconds: int):
         return f"{seconds}s"
 
 
-async def main():
+async def main_async():
     sim_server = SimServer()
     await sim_server.handle_requests()
 
 
+def main():
+    asyncio.run(main_async())
+
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

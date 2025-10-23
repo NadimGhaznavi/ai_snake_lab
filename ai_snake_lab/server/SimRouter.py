@@ -265,11 +265,15 @@ class SimRouter:
         self.log.debug(f"Targeted MQ message to {client_id}: {elem}/{data}")
 
 
-async def main():
+async def main_async():
     router = SimRouter()
     # Start the router
     await router.handle_requests()
 
 
+def main():
+    asyncio.run(main_async())
+
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
