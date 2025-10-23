@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The the project's [CHANGELOG](https://snakelab.osoyalce.com/CHANGELOG.html) for more information.
 
 
+## [0.11.3] - 2025-10-23
+
+### Fixed
+- Git tag issue
+
 ---
 
 ## [0.11.2] - 2025-10-22
