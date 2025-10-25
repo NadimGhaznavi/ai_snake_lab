@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 The the project's [CHANGELOG](https://snakelab.osoyalce.com/CHANGELOG.html) for more information.
 
+---
+
+## [Unreleased]
+
+### Issues
+- There is a lag between when the `SimClient` connects and the game-score data is received and the time when the realtime game-data is received. This leads to a flat section of the plot.
+
+### Added
+- A link to the [Alberta Plan](https://arxiv.org/pdf/2208.11173) on the Richard Sutton page.
+
+### Changed
+- Tuned the `SimServer` *INFO* log messages:
+  - Print the epoch every 50 epochs.
+  - Print a new highscore when achieved.
+- Tuned the `SimRouter` *INFO* log messages:
+  - Print the client and server counts when they change.
+
+### Fixed
+- Fixed *highscores plot*.
+- Fixed `-v` switch so it doesn't require an argument.
+---
 
 ## [0.11.3] - 2025-10-23
 

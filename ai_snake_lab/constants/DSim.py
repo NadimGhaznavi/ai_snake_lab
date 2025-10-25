@@ -28,7 +28,7 @@ class DSim(ConstGroup):
     OUTPUT_SIZE: int = 3
 
     # The discount (gamma) default
-    DISCOUNT_RATE: float = 0.9
+    DISCOUNT_RATE: float = 0.93
 
     # Training loop states
     PAUSED: str = "paused"
@@ -48,3 +48,6 @@ class DSim(ConstGroup):
     # Heartbeat interval, how often clients send "I'm alive" messages to the router.
     # In seconds.
     HEARTBEAT_INTERVAL: int = 5
+
+    # Batch size used in the AIAgent:train_long_memory
+    BATCH_SIZE: int = 32

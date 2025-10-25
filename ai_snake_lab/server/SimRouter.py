@@ -27,22 +27,7 @@ from ai_snake_lab.constants.DLabLogger import DLog
 class SimRouter:
     """Pure MQ router between TUIs and the Simulation Server."""
 
-    def __init__(self):
-        # Process command line arguments
-        parser = argparse.ArgumentParser()
-        parser.add_argument(
-            "-r",
-            "--router",
-            type=str,
-            default=DSim.HOST,
-            help="IP or hostname of the AI Snake Lab router",
-        )
-        parser.add_argument("-v", "--verbose", help="Show additional information")
-        args = parser.parse_args()
-        if args.verbose:
-            loglevel = DLog.DEBUG
-        else:
-            loglevel = DLog.INFO
+    def __init__(self, router, loglevel):
 
         # Setup a logger
         self.log = LabLogger(client_id=DMQ.SIM_ROUTER)
@@ -53,10 +38,9 @@ class SimRouter:
 
         # Create a ROUTER socket to manage multiple clients
         self.socket = self.ctx.socket(zmq.ROUTER)
-        host = args.router
         mq_port = DSim.MQ_PORT
         protocol = DSim.PROTOCOL
-        sim_service = f"{protocol}://{host}:{mq_port}"
+        sim_service = f"{protocol}://{router}:{mq_port}"
         try:
             self.socket.bind(sim_service)
         except zmq.error.ZMQError as e:
@@ -66,21 +50,22 @@ class SimRouter:
 
         self.clients = {}
         self.client_count = 0
+        self.server_count = 0
 
         # We have two async processes that modify the same dictionary, we need a lock to
         # prevent concurrent writes.
         self.clients_lock = asyncio.Lock()
         # Start the process that prunes inactive clients
-        asyncio.create_task(self.prune_dead_clients())
+        asyncio.create_task(self.prune_dead_clients_bg())
 
     async def broadcast_to_simclients(self, elem, data, sender):
         """Broadcast simulation updates (from SimServer) to all connected TUIs."""
 
         client_ids = []
-        self.clients = deepcopy(self.clients)
+        clients = deepcopy(self.clients)
 
-        for client_id in self.clients.keys():
-            if self.clients[client_id][0] == DMQ.SIM_CLIENT:
+        for client_id in clients.keys():
+            if clients[client_id][0] == DMQ.SIM_CLIENT:
                 client_ids.append(client_id)
 
         # Nothing to do, just return
@@ -225,36 +210,40 @@ class SimRouter:
             ]
         )
 
+    async def prune_dead_clients_bg(self):
+        while True:
+            await self.prune_dead_clients()
+            await asyncio.sleep(DSim.HEARTBEAT_INTERVAL * 4)
+
     async def prune_dead_clients(self):
         """Periodic cleanup loop that removes clients whose heartbeats have stopped."""
-        while True:
-            async with self.clients_lock:
-                now = time.time()
-                client_count = 0
-                server_count = 0
+        async with self.clients_lock:
+            now = time.time()
+            client_count = 0
+            server_count = 0
 
-                clients_copy = deepcopy(self.clients)
-                for identity in clients_copy.keys():
-                    sender_type, last = self.clients[identity]
-                    if now - last > (DSim.HEARTBEAT_INTERVAL * 3):
-                        self.log.info(f"Removing inactive client: {identity}")
-                        del self.clients[identity]
-                    else:
-                        if sender_type == DMQ.SIM_SERVER:
-                            server_count += 1
-                        elif sender_type == DMQ.SIM_CLIENT:
-                            client_count += 1
+            clients_copy = deepcopy(self.clients)
+            for identity in clients_copy.keys():
+                sender_type, last = self.clients[identity]
+                if now - last > (DSim.HEARTBEAT_INTERVAL * 3):
+                    self.log.info(f"Removing inactive client: {identity}")
+                    del self.clients[identity]
+                else:
+                    if sender_type == DMQ.SIM_SERVER:
+                        server_count += 1
+                    elif sender_type == DMQ.SIM_CLIENT:
+                        client_count += 1
 
-                await self.forward_to_simserver(
-                    elem=DMQ.CUR_NUM_CLIENTS,
-                    data=client_count,
-                    sender=DMQ.SIM_ROUTER.encode(),
-                )
-                self.client_count = client_count
+            await self.forward_to_simserver(
+                elem=DMQ.CUR_NUM_CLIENTS,
+                data=client_count,
+                sender=DMQ.SIM_ROUTER.encode(),
+            )
+
+            if client_count != self.client_count or server_count != self.server_count:
                 self.log.info(
                     f"Connected client(s): {client_count}, server(s): {server_count}"
                 )
-            await asyncio.sleep(DSim.HEARTBEAT_INTERVAL * 4)
 
     async def send_to_simclient(self, elem, data):
         client_id = data[0]
@@ -265,14 +254,29 @@ class SimRouter:
         self.log.debug(f"Targeted MQ message to {client_id}: {elem}/{data}")
 
 
-async def main_async():
-    router = SimRouter()
+async def main_async(router, loglevel):
+    router = SimRouter(router=router, loglevel=loglevel)
     # Start the router
     await router.handle_requests()
 
 
 def main():
-    asyncio.run(main_async())
+    # Process command line arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-r",
+        "--router",
+        type=str,
+        default=DSim.HOST,
+        help="IP or hostname of the AI Snake Lab router",
+    )
+    parser.add_argument("-v", "--verbose", help="Show additional information")
+    args = parser.parse_args()
+    if args.verbose:
+        loglevel = DLog.DEBUG
+    else:
+        loglevel = DLog.INFO
+    asyncio.run(main_async(router=args.router, loglevel=loglevel))
 
 
 if __name__ == "__main__":

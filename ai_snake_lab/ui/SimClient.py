@@ -361,13 +361,14 @@ class SimClient(App):
                 msg_bytes = await self.socket.recv()
                 msg = zmq.utils.jsonapi.loads(msg_bytes)
             except Exception as e:
-                self.log.error(f"{DMQ_Label.RECEIVE_ERROR}: {e}")
+                self.lablog.error(f"{DMQ_Label.RECEIVE_ERROR}: {e}")
                 await asyncio.sleep(1)
                 continue
 
             elem = msg.get(DMQ.ELEM)
             data = msg.get(DMQ.DATA, {})
-
+            ## Uncomment to log *every* MQ message: Very verbose!!!
+            # self.lablog.debug(f"MQ message: {elem}/{data}")
             if elem == DMQ.AVG_EPOCH_LOSS:
                 self.avg_epoch_loss = data
             elif elem == DMQ.AVG_LOSS_DATA:
@@ -431,9 +432,7 @@ class SimClient(App):
                     score = event[1]
                     runtime = event[2]
                     highscores_widget.write_line(f"{epoch:7,d}{score:7d}{runtime:>13s}")
-                    tabbed_plots.add_highscore_data(
-                        epoch=epoch, score=score, plot=False
-                    )
+                    tabbed_plots.add_highscore_data(epoch=epoch, score=score)
             elif elem == DMQ.RUNTIME:
                 self.runtime = data
             elif elem == DMQ.SCORE:
@@ -716,20 +715,15 @@ class SimClient(App):
         if len(highscore_event) == 0:
             return
 
-        epoch = highscore_event[0]
-        self.highscore = highscore_event[1]
+        epoch = int(highscore_event[0])
+        self.highscore = int(highscore_event[1])
         event_time = highscore_event[2]
-        if epoch == DLabel.N_SLASH_A or self.highscore == DLabel.N_SLASH_A:
-            return
-
-        epoch = int(epoch)
-        self.highscore = int(self.highscore)
 
         self.query_one(f"#{DLayout.HIGHSCORES}", Log).write_line(
             f"{epoch:7,d}{self.highscore:7d}{event_time:>13s}"
         )
         self.query_one(f"#{DLayout.TABBED_PLOTS}", TabbedPlots).add_highscore_data(
-            int(epoch), int(self.highscore)
+            epoch, self.highscore
         )
 
     def watch_highscore(self, highscore_value: str):
@@ -821,7 +815,9 @@ def main():
         default=DSim.HOST,
         help="IP or hostname of the AI Snake Lab router",
     )
-    parser.add_argument("-v", "--verbose", help="Show additional information")
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", help="Show additional information"
+    )
     args = parser.parse_args()
     if args.verbose:
         loglevel = DLog.DEBUG

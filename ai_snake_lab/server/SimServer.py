@@ -423,6 +423,7 @@ class SimServer:
                     self.db_mgr.add_highscore_event(
                         epoch=epoch, score=score, runtime=runtime_str
                     )
+                    self.log.info(f"New highscore at game {epoch}: {highscore}")
 
                 # We're still playing the game...
                 if not game_over:
@@ -453,7 +454,8 @@ class SimServer:
                 # Game is over
                 else:
                     epoch += 1
-                    self.log.debug(f"Epoch: {epoch}")
+                    if epoch % 50 == 0:
+                        self.log.info(f"Epoch: {epoch}")
 
                     ## RL steps
                     # Save the last move to memory

@@ -26,6 +26,7 @@ from ai_snake_lab.constants.DModelL import DModelL
 from ai_snake_lab.constants.DModelLRNN import DModelRNN
 from ai_snake_lab.constants.DAIAgent import DAIAgent
 from ai_snake_lab.constants.DEpsilon import DEpsilon
+from ai_snake_lab.constants.DSim import DSim
 
 
 class AIAgent:
@@ -41,6 +42,7 @@ class AIAgent:
         self._seed = seed
         self._dynamic_training = None
         self._epoch = None
+        self._model = None
 
     def dynamic_training(self, enable_flag=None):
         if enable_flag is not None:
@@ -130,7 +132,7 @@ class AIAgent:
     def set_optimizer(self, optimizer):
         self.trainer.set_optimizer(optimizer)
 
-    def train_long_memory(self, batch_size=64):
+    def train_long_memory(self, batch_size=DSim.BATCH_SIZE):
 
         if self.epoch() < MEM.MIN_GAMES:
             self.game_id(MEM.NO_DATA)
