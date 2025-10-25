@@ -9,7 +9,7 @@ The the project's [CHANGELOG](https://snakelab.osoyalce.com/CHANGELOG.html) for 
 
 ---
 
-## [Unreleased]
+## [0.12.0] - 2025-10-24
 
 ### Issues
 - There is a lag between when the `SimClient` connects and the game-score data is received and the time when the realtime game-data is received. This leads to a flat section of the plot.
