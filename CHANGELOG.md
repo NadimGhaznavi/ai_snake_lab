@@ -9,10 +9,14 @@ The the project's [CHANGELOG](https://snakelab.osoyalce.com/CHANGELOG.html) for 
 
 ---
 
-## [0.12.0] - 2025-10-24
+## [0.12.0] - 2025-10-31
 
-### Issues
-- There is a lag between when the `SimClient` connects and the game-score data is received and the time when the realtime game-data is received. This leads to a flat section of the plot.
+### Fixed
+- Set default router address to 0.0.0.0
+
+---
+
+## [0.12.0] - 2025-10-24
 
 ### Added
 - A link to the [Alberta Plan](https://arxiv.org/pdf/2208.11173) on the Richard Sutton page.
