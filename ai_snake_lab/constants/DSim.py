@@ -41,7 +41,7 @@ class DSim(ConstGroup):
 
     ## Distributed settings
     # Server protocol and port
-    HOST: str = "sally.osoyalce.com"
+    HOST: str = "0.0.0.0"
     PROTOCOL: str = "tcp"
     MQ_PORT: int = 5555
 
