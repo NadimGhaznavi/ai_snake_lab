@@ -15,6 +15,8 @@ import torch
 import numpy as np
 import copy
 
+from ai_snake_lab.utils.LabLogger import LabLogger
+
 from ai_snake_lab.ai.models.ModelL import ModelL
 from ai_snake_lab.ai.models.ModelRNN import ModelRNN
 from ai_snake_lab.constants.DModelL import DModelL
@@ -30,6 +32,8 @@ class AITrainer:
         self.model = None
         self.target_model = None
         self.optimizer = None
+
+        self.log = LabLogger(client_id="AITrainer", to_console=True)
 
         # self.criterion = nn.MSELoss()
         self.criterion = nn.SmoothL1Loss()
@@ -96,23 +100,40 @@ class AITrainer:
             done = done.unsqueeze(0)
 
         # Predicted Q-values (main network)
-        pred = self.model(state)  # shape: [batch_size, n_actions]
-
+        pred_Q_all = self.model(state)  # shape: [batch, n_actions]
+        action_indices = torch.argmax(action, dim=1)
+        pred_Q = pred_Q_all.gather(1, action_indices.unsqueeze(1)).squeeze(1)
         # Compute target Q-values
+
+        # Orig
+        # with torch.no_grad():
+        #    next_Q_values = self.target_model(next_state)
+        #    max_next_Q = next_Q_values.max(dim=1)[0]  # shape: [batch_size]
+        #    target_Q = reward + self.gamma * max_next_Q * (~done)  # shape: [batch_size]
+        # Ver 1
+        # with torch.no_grad():
+        #    next_actions = self.model(next_state).argmax(dim=1)
+        #    next_Q_target = self.target_model(next_state)
+        #    max_next_Q = next_Q_target.gather(1, next_actions.unsqueeze(1)).squeeze()
+        # Ver 2
+        # with torch.no_grad():
+        #    # Actions chosen by main network
+        #    next_actions = self.model(next_state).argmax(dim=1)
+        #    # Q-values evaluated by target network
+        #    next_Q = self.target_model(next_state).gather(1, next_actions.unsqueeze(1)).squeeze(1)
+        #    target_Q = reward + self.gamma * next_Q * (~done)
+        # Ver 3
         with torch.no_grad():
-            next_Q_values = self.target_model(next_state)
-            max_next_Q = next_Q_values.max(dim=1)[0]  # shape: [batch_size]
-            target_Q = reward + self.gamma * max_next_Q * (~done)  # shape: [batch_size]
+            # Select best actions using online (policy) network
+            next_actions = torch.argmax(self.model(next_state), dim=1, keepdim=True)
+            # Evaluate them using target network
+            next_Q_target = (
+                self.target_model(next_state).gather(1, next_actions).squeeze(1)
+            )
+            # Compute final target values
+            target_Q = reward + self.gamma * next_Q_target * (~done)
 
-        # Gather predicted Q-values
-        action_indices = torch.argmax(action, dim=1)  # [batch_size]
-        pred_Q = pred.gather(1, action_indices.unsqueeze(1))  # [batch_size, 1]
-        pred_Q = pred_Q.view(-1)  # [batch_size]
-
-        # Target Q-values
-        target_Q = target_Q.view(-1)  # [batch_size]
-
-        # Now compute loss
+        # Compute loss
         loss = self.criterion(pred_Q, target_Q)
 
         # Backpropagate
