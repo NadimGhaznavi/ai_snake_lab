@@ -98,6 +98,8 @@ class AITrainer:
             action = action.unsqueeze(0)
             reward = reward.unsqueeze(0)
             done = done.unsqueeze(0)
+            reward = reward.squeeze(-1)
+            done = done.squeeze(-1)
 
         # Predicted Q-values (main network)
         pred_Q_all = self.model(state)  # shape: [batch, n_actions]
