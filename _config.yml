@@ -3,6 +3,10 @@ description: Reinforcement Learning Sandbox
 
 remote_theme: nadimghaznavi/minimax
 
+mycount:
+    endpoint: "https://count.osoyalce.com/count"
+    site: "ai_snake_lab"
+
 plugins:
   - jekyll-remote-theme
 
