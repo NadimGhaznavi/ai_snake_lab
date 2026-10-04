@@ -1,6 +1,7 @@
 ---
 title: Git
-layout: default
+author_profile: true
+layout: single
 ---
 
 # Introduction

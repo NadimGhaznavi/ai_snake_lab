@@ -1,5 +1,7 @@
 ---
 Title: AI Snake Lab - Constants
+author_profile: true
+layout: single
 ---
 
 # Introduction

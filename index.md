@@ -1,5 +1,7 @@
 ---
 title: AI Snake Lab
+author_profile: true
+layout: single
 ---
 
 ![AI Snake Lab](/images/ai-snake-lab.png)

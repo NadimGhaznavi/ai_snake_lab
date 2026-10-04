@@ -1,5 +1,7 @@
 ---
 Title: Project Layout
+author_profile: true
+layout: single
 ---
 
 # Directory Structure

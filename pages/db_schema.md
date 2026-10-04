@@ -1,5 +1,7 @@
 ---
 Title: Database Schema
+author_profile: true
+layout: single
 ---
 
 # Introduction

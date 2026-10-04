@@ -1,5 +1,7 @@
 ---
 Title: Richard S. Sutton
+author_profile: true
+layout: single
 ---
 
 # Quotes
