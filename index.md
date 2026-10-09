@@ -1,5 +1,5 @@
 ---
-title: AI Snake Lab - RL Sandbox
+title: AI Snake Lab - Reinforcement Learning Sandbox
 author_profile: true
 layout: single
 ---
