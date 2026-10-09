@@ -97,7 +97,7 @@ git commit -m "feat: Implement foo feature"
 git push origin feature/foo
 ```
 
-See the [Git Commit Standard](/pages/Git-Commit-Standard.html) for how git commit messages should be formatted.
+See the [Git Commit Standards]({{ site.baseurl }}{% link pages/git_commit_standards.md %}) for how git commit messages should be formatted.
 
 ---
 

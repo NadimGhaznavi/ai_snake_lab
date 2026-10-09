@@ -4,7 +4,7 @@ author_profile: true
 layout: single
 ---
 
-![AI Snake Lab](/images/ai-snake-lab.png)
+![AI Snake Lab]({{ '/images/ai-snake-lab.png' | relative_url }})
 
 # 🐍 Introduction
 
@@ -101,13 +101,13 @@ Richard S. Sutton is also an inspiration to me. His thoughts on *Reinforcement L
 
 # 📚 Technical Docs
 
-- [Architecture](/pages/architecture.html)
-- [Filesystem Layout](/pages/project_layout.html)
-- [Database Schema](/pages/db_schema.html)
-- [Constant - Definitions and Organization](/pages/constants.html)
-- [Git Commit Standards](/pages/git_commit_standards.html)
-- [Git Branching Strategy](/pages/git_branching_strategy.html)
-- [Change Log](/CHANGELOG.md)
+- [Architecture]({{ site.baseurl }}{% link pages/architecture.md %})
+- [Filesystem Layout]({{ site.baseurl }}{% link pages/project_layout.md %})
+- [Database Schema]({{ site.baseurl }}{% link pages/db_schema.md %})
+- [Constants - Definitions and Organization]({{ site.baseurl }}{% link pages/constants.md %})
+- [Git Commit Standards]({{ site.baseurl }}{% link pages/git_commit_standards.md %})
+- [Git Branching Strategy]({{ site.baseurl }}{% link pages/git_branching_strategy.md %})
+- [Change Log]({{ site.baseurl }}{% link CHANGELOG.md %})
 
 ---
 
@@ -117,7 +117,7 @@ Richard S. Sutton is also an inspiration to me. His thoughts on *Reinforcement L
 - Will McGugan's [Textual](https://textual.textualize.io/) *Rapid Application Development* framework
 - [Dolphie](https://github.com/charles-001/dolphie): *A single pane of glass for real-time analytics into MySQL/MariaDB & ProxySQL*
 - Richard Sutton's [Homepage](http://www.incompleteideas.net/)
-- Richard Sutton [quotes](/pages/richard_sutton.html) and other materials.
+- Richard Sutton [quotes]({{ site.baseurl }}{% link pages/richard_sutton.md %}) and other materials.
 - [Useful Plots to Diagnose your Neural Network](https://medium.com/data-science/useful-plots-to-diagnose-your-neural-network-521907fa2f45) by George V Jose
 - [A Deep Dive into Learning Curves in Machine Learning](https://wandb.ai/mostafaibrahim17/ml-articles/reports/A-Deep-Dive-Into-Learning-Curves-in-Machine-Learning--Vmlldzo0NjA1ODY0) by Mostafa Ibrahim
 

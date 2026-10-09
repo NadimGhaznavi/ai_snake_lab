@@ -1,5 +1,5 @@
 ---
-Title: Project Layout
+title: Filesystem Layout
 author_profile: true
 layout: single
 ---

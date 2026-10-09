@@ -1,5 +1,5 @@
 ---
-title: Git
+title: Git Commit Standards
 author_profile: true
 layout: single
 ---

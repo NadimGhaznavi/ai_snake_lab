@@ -1,3 +1,9 @@
+---
+title: Change Log
+author_profile: true
+layout: single
+---
+
 # Changelog
 
 All notable changes to this project will be documented in this file.

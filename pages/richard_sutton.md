@@ -1,5 +1,5 @@
 ---
-Title: Richard S. Sutton
+title: Richard S. Sutton
 author_profile: true
 layout: single
 ---

@@ -1,5 +1,7 @@
 ---
-Title: Notation used in Sutton's RL Book
+title: Notation used in Sutton's RL Book
+author_profile: true
+layout: single
 ---
 
 ![notation 1](/images/sutton-rl-book-notation-1.png)

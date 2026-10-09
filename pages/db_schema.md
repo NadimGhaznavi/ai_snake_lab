@@ -1,5 +1,5 @@
 ---
-Title: Database Schema
+title: Database Schema
 author_profile: true
 layout: single
 ---

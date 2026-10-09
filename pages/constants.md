@@ -1,5 +1,5 @@
 ---
-Title: AI Snake Lab - Constants
+title: Constants - Definitions and Organization
 author_profile: true
 layout: single
 ---
